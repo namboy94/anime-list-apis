@@ -38,16 +38,16 @@ class TestScore(TestCase):
         ten_deci = Score(16, ScoreType.TEN_POINT_DECIMAL)
         hundred = Score(80, ScoreType.PERCENTAGE)
 
-        self.assertEqual(three.score, 3)
+        self.assertEqual(three.get(), 3)
         self.assertEqual(three.mode, ScoreType.THREE_POINT)
-        self.assertEqual(three.score, 4)
-        self.assertEqual(three.mode, ScoreType.FIVE_POINT)
-        self.assertEqual(three.score, 8)
-        self.assertEqual(three.mode, ScoreType.TEN_POINT)
-        self.assertEqual(three.score, 16)
-        self.assertEqual(three.mode, ScoreType.TEN_POINT_DECIMAL)
-        self.assertEqual(three.score, 80)
-        self.assertEqual(three.mode, ScoreType.PERCENTAGE)
+        self.assertEqual(five.get(), 4)
+        self.assertEqual(five.mode, ScoreType.FIVE_POINT)
+        self.assertEqual(ten.get(), 8)
+        self.assertEqual(ten.mode, ScoreType.TEN_POINT)
+        self.assertEqual(ten_deci.get(), 16)
+        self.assertEqual(ten_deci.mode, ScoreType.TEN_POINT_DECIMAL)
+        self.assertEqual(hundred.get(), 80)
+        self.assertEqual(hundred.mode, ScoreType.PERCENTAGE)
 
         for score in [five, ten, ten_deci, hundred]:
             for comparison in [five, ten, ten_deci, hundred]:
@@ -57,9 +57,27 @@ class TestScore(TestCase):
                         comparison.get(score_type)
                     )
 
+    def test_invalid_score(self):
+        """
+        Tests using an invalid score
+        :return: None
+        """
+        for score_type, score in {
+            ScoreType.THREE_POINT: 4,
+            ScoreType.FIVE_POINT: -1,
+            ScoreType.TEN_POINT: 100,
+            ScoreType.TEN_POINT_DECIMAL: -100,
+            ScoreType.PERCENTAGE: 101
+        }.items():
+            try:
+                Score(score, score_type)
+                self.fail()
+            except ValueError:
+                pass
+
     def test_score_calculation(self):
         """
-        Tests calculating different score types
+        Tests calculating different score types-
         :return: None
         """
         score = Score(77, ScoreType.PERCENTAGE)

@@ -58,9 +58,9 @@ class TestId(TestCase):
         :return: None
         """
         _id = Id({IdType.MYANIMELIST: 1})
-        _id.set(IdType.MYANIMELIST, 100)
-        _id.set(IdType.ANILIST, 200)
-        _id.set(IdType.KITSU, 300)
+        _id.set(100, IdType.MYANIMELIST)
+        _id.set(200, IdType.ANILIST)
+        _id.set(300, IdType.KITSU)
         self.assertEqual(100, _id.get(IdType.MYANIMELIST))
         self.assertEqual(200, _id.get(IdType.ANILIST))
         self.assertEqual(300, _id.get(IdType.KITSU))
@@ -73,6 +73,19 @@ class TestId(TestCase):
         """
         try:
             Id({})
+            self.fail()
+        except ValueError:
+            pass
+
+    def test_no_valid_entries(self):
+        """
+        Tests that providing None values as the only IDs still result in
+        a ValueError
+        :return: None
+        """
+        try:
+            # noinspection PyTypeChecker
+            Id({IdType.MYANIMELIST: None})
             self.fail()
         except ValueError:
             pass

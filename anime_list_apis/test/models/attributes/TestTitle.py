@@ -34,13 +34,13 @@ class TestTitle(TestCase):
         title = Title({
             TitleType.ROMAJI: "Shingeki no Kyojin",
             TitleType.ENGLISH: "Attack on Titan",
-            TitleType.NATIVE: "進撃の巨人"
+            TitleType.JAPANESE: "進撃の巨人"
         })  # Default = ROMAJI
 
         self.assertEqual(title.get(), "Shingeki no Kyojin")
         self.assertEqual(title.get(TitleType.ENGLISH), "Attack on Titan")
         self.assertEqual(title.get(TitleType.ROMAJI), "Shingeki no Kyojin")
-        self.assertEqual(title.get(TitleType.NATIVE), "進撃の巨人")
+        self.assertEqual(title.get(TitleType.JAPANESE), "進撃の巨人")
 
     def test_missing_entries(self):
         """
@@ -50,7 +50,13 @@ class TestTitle(TestCase):
         title = Title({TitleType.ROMAJI: "Shingeki no Kyojin"})
         self.assertEqual(title.get(TitleType.ROMAJI), "Shingeki no Kyojin")
         self.assertEqual(title.get(TitleType.ENGLISH), None)
-        self.assertEqual(title.get(TitleType.NATIVE), None)
+        self.assertEqual(title.get(TitleType.JAPANESE), None)
+
+    def test_no_entries(self):
+        """
+        Tests that title entries
+        :return:
+        """
 
     def test_changing_default_title_type(self):
         """
@@ -71,10 +77,10 @@ class TestTitle(TestCase):
         """
         title = Title({
             TitleType.ENGLISH: "Attack on Titan",
-            TitleType.NATIVE: "進撃の巨人"
+            TitleType.JAPANESE: "進撃の巨人"
         })
-        self.assertEqual(title.default, TitleType.ENGLISH)
+        self.assertEqual(title.get(), "Attack on Titan")
         title = Title({
-            TitleType.NATIVE: "進撃の巨人"
+            TitleType.JAPANESE: "進撃の巨人"
         })
-        self.assertEqual(title.default, TitleType.NATIVE)
+        self.assertEqual(title.get(), "進撃の巨人")

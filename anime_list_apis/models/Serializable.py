@@ -33,6 +33,14 @@ class Serializable:
         Serializes the object into a dictionary
         :return: The serialized form of this object
         """
+        return self._serialize()
+
+    def _serialize(self) -> Dict[str, str or int or float or bool or None
+                                 or Dict or List or Tuple or Set]:
+        """
+        Implements the serialization of the object
+        :return: The serialized form of this object
+        """
         raise NotImplementedError()  # pragma: no cover
 
     @classmethod
@@ -42,6 +50,20 @@ class Serializable:
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize
         :return: The deserialized object
+        :raises TypeError: If a type error occurred
+        :raises ValueError: If the data could not be deserialized
+        """
+        cls.ensure_type(data, dict)
+        return cls._deserialize(data)  # type: cls
+
+    @classmethod
+    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
+                                     or Dict or List or Tuple or Set]):
+        """
+        Implements the deserialisation of this object
+        :param data: The data to deserialize
+        :return: The deserialized object
+        :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
         raise NotImplementedError()  # pragma: no cover
@@ -74,3 +96,34 @@ class Serializable:
         :return: The string representation of this object
         """
         return json.dumps(self.serialize())
+
+    @staticmethod
+    def type_check(obj: object, typ: type) -> bool:
+        """
+        Checks if an object is an instance of a type
+        :param obj: The object to check
+        :param typ: The type it should be
+        :return: True if the object is of that type, else False
+        """
+        if not isinstance(obj, typ):
+            return False
+
+        # Since bools are ints, make sure that an int object
+        # isn't actually a bool
+        elif typ == int:
+            return not isinstance(obj, bool)
+
+        else:
+            return True
+
+    @classmethod
+    def ensure_type(cls, obj: object, typ: type):
+        """
+        Raises a TypeError if the object does not match the type
+        :param obj: The object to check
+        :param typ: The type the object should be
+        :return: None
+        :raises TypeError: If the types do not match
+        """
+        if not cls.type_check(obj, typ):
+            raise TypeError(str(obj) + " is not of type " + str(typ))

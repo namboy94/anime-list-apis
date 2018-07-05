@@ -27,6 +27,21 @@ class TestId(TestCase):
     Tests the Id Attribute class
     """
 
+    def test_invalid_constructor_parameters(self):
+        """
+        Tests using invalid parameter types with the constructor
+        :return: None
+        """
+        for parameters in [
+            ([],),
+            (100,)
+        ]:
+            try:
+                Id(*parameters)
+                self.fail()
+            except TypeError:
+                pass
+
     def test_fetching_different_id_types(self):
         """
         Tests generating an ID using the constructor and fetching the
@@ -139,12 +154,13 @@ class TestId(TestCase):
             {},
             {"ANILIST": "1"},
             {"Anilist": 1},
-            {"ANILIST": None}
+            {"ANILIST": None},
+            []
         ]:
             try:
                 Id.deserialize(data)
                 self.fail()
-            except ValueError:
+            except (TypeError, ValueError):
                 pass
 
     def test_equality(self):

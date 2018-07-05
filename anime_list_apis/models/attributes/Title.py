@@ -46,12 +46,14 @@ class Title(Serializable):
         In case no valid titles are supplied, a ValueError is raised
         :param titles: The titles to include
         :param default: The default title to show. Defaults to ROMAJI
+        :raises TypeError: If an invalid parameter type was provided
         :raises ValueError: In case no valid titles were provided
         """
+        self.ensure_type(titles, dict)
+        self.ensure_type(default, TitleType)
         titles = {
             key: value for key, value in titles.items()
-            if value is not None
-            and isinstance(value, str)
+            if self.type_check(value, str)
         }
         if len(titles) == 0:
             raise ValueError("At least one title required")
@@ -93,8 +95,7 @@ class Title(Serializable):
         :return: None
         :raises TypeError: If the type of the title string is wrong
         """
-        if not isinstance(title, str):
-            raise TypeError("Not a string")
+        self.ensure_type(title, str)
         self.__titles[title_type] = title
 
     def change_default_title_type(self, title_type: TitleType):
@@ -110,8 +111,8 @@ class Title(Serializable):
         else:
             raise ValueError("Title Type has no title")
 
-    def serialize(self) -> Dict[str, str or int or float or bool or None
-                                or Dict or List or Tuple or Set]:
+    def _serialize(self) -> Dict[str, str or int or float or bool or None
+                                 or Dict or List or Tuple or Set]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object
@@ -123,12 +124,13 @@ class Title(Serializable):
         return data
 
     @classmethod
-    def deserialize(cls, data: Dict[str, str or int or float or bool or None
-                                    or Dict or List or Tuple or Set]):
+    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
+                                     or Dict or List or Tuple or Set]):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize
         :return: The deserialized object
+        :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
         try:

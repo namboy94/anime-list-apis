@@ -25,6 +25,9 @@ from anime_list_apis.models.Serializable import Serializable
 class ScoreType(Enum):
     """
     Enumeration modelling the different score types
+    The value of the enum specifies the maximum value a score of that
+    type may be.
+    For example, TEN_POINT scores may range from 0 to 10
     """
     THREE_POINT = 3
     FIVE_POINT = 5
@@ -45,8 +48,13 @@ class Score(Serializable):
         maximum score of the score type.
         :param score: The points of the score
         :param score_type: The Type of score
+        :raises TypeError: In case any of the parameter values
+                           is of the wrong type
         :raises ValueError: If the score is outside the valid range
         """
+        self.ensure_type(score, int)
+        self.ensure_type(score_type, ScoreType)
+
         if score < 0 or score > score_type.value:
             raise ValueError("Invalid score")
 
@@ -92,8 +100,8 @@ class Score(Serializable):
         converted = percentage * dest.value
         return round(converted)
 
-    def serialize(self) -> Dict[str, str or int or float or bool or None
-                                or Dict or List or Tuple or Set]:
+    def _serialize(self) -> Dict[str, str or int or float or bool or None
+                                 or Dict or List or Tuple or Set]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object
@@ -101,12 +109,13 @@ class Score(Serializable):
         return {self.mode.name: self.__score}
 
     @classmethod
-    def deserialize(cls, data: Dict[str, str or int or float or bool or None
-                                    or Dict or List or Tuple or Set]):
+    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
+                                     or Dict or List or Tuple or Set]):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize
         :return: The deserialized object
+        :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
         if len(data) != 1:
@@ -115,8 +124,7 @@ class Score(Serializable):
         try:
             score_type, score = list(data.items())[0]
 
-            if not isinstance(score, int) or isinstance(score, bool):
-                raise ValueError("Invalid type for score")
+            cls.ensure_type(score, int)
 
             generated = cls(score, ScoreType[score_type])  # type: Score
             return generated

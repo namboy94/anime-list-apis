@@ -19,7 +19,7 @@ LICENSE"""
 
 import json
 from unittest import TestCase
-from anime_list_apis.models.attributes.Date import Relation, RelationType
+from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.Id import Id, IdType
 
 
@@ -27,6 +27,27 @@ class TestRelation(TestCase):
     """
     Tests the Relation Attribute class
     """
+
+    def test_invalid_constructor_parameters(self):
+        """
+        Tests using invalid parameter types with the constructor
+        :return: None
+        """
+        source = Id({IdType.MYANIMELIST: 1})
+        dest = Id({IdType.MYANIMELIST: 2})
+        for parameters in [
+            (None, dest, RelationType.SEQUEL),
+            (source, None, RelationType.SEQUEL),
+            (source, dest, None),
+            (1, 2, RelationType.SEQUEL),
+            (True, False, RelationType.SEQUEL),
+            (source, dest, "SEQUEL")
+        ]:
+            try:
+                Relation(*parameters)
+                self.fail()
+            except TypeError:
+                pass
 
     def test_serialization(self):
         """
@@ -78,11 +99,15 @@ class TestRelation(TestCase):
             {"source": source, "dest": dest},
             {"source": source, "type": "SEQUEL"},
             {"dest": dest, "type": "SEQUEL"},
+            {"source": 1, "dest": dest, "type": "Sequel"},
+            {"source": source, "dest": 2, "type": "Sequel"},
+            []
         ]:
             try:
+                print(data)
                 Relation.deserialize(data)
                 self.fail()
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
 
     def test_equality(self):
@@ -90,9 +115,9 @@ class TestRelation(TestCase):
         Tests that the equality of the objects is handled correctly
         :return: None
         """
-        id_one = Id({IdType.MYANIMELIST: 1}).serialize()
-        id_two = Id({IdType.MYANIMELIST: 2}).serialize()
-        id_three = Id({IdType.MYANIMELIST: 3}).serialize()
+        id_one = Id({IdType.MYANIMELIST: 1})
+        id_two = Id({IdType.MYANIMELIST: 2})
+        id_three = Id({IdType.MYANIMELIST: 3})
 
         one = Relation(id_one, id_two, RelationType.SEQUEL)
         two = Relation(id_one, id_two, RelationType.SEQUEL)

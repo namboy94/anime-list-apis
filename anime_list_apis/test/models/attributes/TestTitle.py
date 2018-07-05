@@ -27,6 +27,23 @@ class TestTitle(TestCase):
     Tests the Title Attribute class
     """
 
+    def test_invalid_constructor_parameters(self):
+        """
+        Tests using invalid parameter types with the constructor
+        :return: None
+        """
+        for parameters in [
+            (True,),
+            (None,),
+            ({}, 1),
+            ({}, None)
+        ]:
+            try:
+                Title(*parameters)
+                self.fail()
+            except TypeError:
+                pass
+
     def test_title_construction(self):
         """
         Tests constructing the title
@@ -197,12 +214,13 @@ class TestTitle(TestCase):
             {"ANILIST": "1", "default": "ROMAJI"},
             {"ROMAJI": 1, "default": "ROMAJI"},
             {"ROMAJI": None, "default": "ROMAJI"},
-            {"Romaji": "Hello", "default": "ROMAJI"}
+            {"Romaji": "Hello", "default": "ROMAJI"},
+            []
         ]:
             try:
                 Title.deserialize(data)
                 self.fail()
-            except ValueError:
+            except (TypeError, ValueError):
                 pass
 
     def test_equality(self):

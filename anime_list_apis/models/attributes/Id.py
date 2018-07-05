@@ -42,13 +42,13 @@ class Id(Serializable):
         IDs to the different ID types. At least one entry is required.
         Missing IDs will be replaced with None
         :param ids: The IDs mapped to an IdType
+        :raises TypeError: If an invalid parameter type was provided
         :raises ValueError: In case no valid ID was provided
         """
+        self.ensure_type(ids, dict)
         ids = {
             key: value for key, value in ids.items()
-            if value is not None
-            and isinstance(value, int)
-            and not isinstance(value, bool)
+            if self.type_check(value, int)
         }
         if len(ids) == 0:
             raise ValueError("At least one ID required")
@@ -75,13 +75,11 @@ class Id(Serializable):
         :return: None
         :raises TypeError: If the provided ID is not an integer
         """
-        if not isinstance(_id, int) or isinstance(_id, bool):
-            raise TypeError("Not an integer")
-        else:
-            self.__ids[id_type] = _id
+        self.ensure_type(_id, int)
+        self.__ids[id_type] = _id
 
-    def serialize(self) -> Dict[str, str or int or float or bool or None
-                                or Dict or List or Tuple or Set]:
+    def _serialize(self) -> Dict[str, str or int or float or bool or None
+                                 or Dict or List or Tuple or Set]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object
@@ -92,12 +90,13 @@ class Id(Serializable):
         return data
 
     @classmethod
-    def deserialize(cls, data: Dict[str, str or int or float or bool or None
-                                    or Dict or List or Tuple or Set]):
+    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
+                                     or Dict or List or Tuple or Set]):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize
         :return: The deserialized object
+        :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
         try:

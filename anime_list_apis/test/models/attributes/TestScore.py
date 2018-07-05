@@ -27,6 +27,23 @@ class TestScore(TestCase):
     Tests the Score Attribute class
     """
 
+    def test_invalid_constructor_parameters(self):
+        """
+        Tests using invalid parameter types with the constructor
+        :return: None
+        """
+        for parameters in [
+            (1, 1),
+            (ScoreType.TEN_POINT, ScoreType.TEN_POINT),
+            (True, ScoreType.TEN_POINT),
+            (None, ScoreType.TEN_POINT)
+        ]:
+            try:
+                Score(*parameters)
+                self.fail()
+            except TypeError:
+                pass
+
     def test_initializing_different_score_types(self):
         """
         Tests initializing all types of scores with equivalent
@@ -133,12 +150,13 @@ class TestScore(TestCase):
             {"TEN_POINT": "1"},
             {"Ten_Point": 1},
             {"TEN_POINT": -1},
-            {"PERCENTAGE": 101}
+            {"PERCENTAGE": 101},
+            []
         ]:
             try:
                 Score.deserialize(data)
                 self.fail()
-            except ValueError:
+            except (TypeError, ValueError):
                 pass
 
     def test_equality(self):

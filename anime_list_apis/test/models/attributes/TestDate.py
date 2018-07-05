@@ -27,6 +27,24 @@ class TestDate(TestCase):
     Tests the Date Attribute class
     """
 
+    def test_invalid_constructor_parameters(self):
+        """
+        Tests using invalid parameter types with the constructor
+        :return: None
+        """
+        for parameters in [
+            (1, 1, None),
+            (1, None, 1),
+            (None, 1, 1),
+            ("", 1, 1),
+            (True, 1, 1)
+        ]:
+            try:
+                Date(*parameters)
+                self.fail()
+            except TypeError:
+                pass
+
     def test_serialization(self):
         """
         Tests serializing a Date object
@@ -61,12 +79,13 @@ class TestDate(TestCase):
             {"year": 2018, "month": None, "day": 2},
             {"year": 2018, "month": 1},
             {"year": 2018, "day": 2},
-            {"month": 1, "day": 2}
+            {"month": 1, "day": 2},
+            []
         ]:
             try:
                 Date.deserialize(data)
                 self.fail()
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
 
     def test_equality(self):

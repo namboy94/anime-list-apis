@@ -23,9 +23,8 @@ from enum import Enum
 class MediaStatus(Enum):
     """
     Enumeration that models the state of a media entry
-    The enum value specifies whether or not the status is completed or not
     """
-    FINISHED = True
-    RELEASING = False
-    NOT_RELEASED = False
-    CANCELLED = False
+    FINISHED = 1
+    RELEASING = 2
+    NOT_RELEASED = 3
+    CANCELLED = 4

@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-from enum import Enum, auto
+from enum import Enum
 from typing import Dict, List, Tuple, Set
 from anime_list_apis.models.Serializable import Serializable
 
@@ -26,9 +26,9 @@ class IdType(Enum):
     """
     Enumeration of different ID types
     """
-    MYANIMELIST = auto()
-    ANILIST = auto()
-    KITSU = auto()
+    MYANIMELIST = 1
+    ANILIST = 2
+    KITSU = 3
 
 
 class Id(Serializable):

@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-from enum import Enum, auto
+from enum import Enum
 from typing import Dict, List, Tuple, Set
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.Id import Id
@@ -28,15 +28,15 @@ class RelationType(Enum):
     An enumeration modelling the different kinds of relations between
     entries.
     """
-    PREQUEL = auto()
-    SEQUEL = auto()
-    PARENT = auto()
-    SIDE_STORY = auto()
-    SUMMARY = auto()
-    CHARACTER = auto()
-    SPIN_OFF = auto()
-    OTHER = auto()
-    ADAPTATION = auto()
+    PREQUEL = 100
+    SEQUEL = 101
+    PARENT = 102
+    SIDE_STORY = 103
+    SUMMARY = 104
+    CHARACTER = 200
+    SPIN_OFF = 201
+    OTHER = 202
+    ADAPTATION = 203
 
 
 class Relation(Serializable):
@@ -69,14 +69,8 @@ class Relation(Serializable):
         connection (Sequel, Prequel, Parent, Side Story or a summary) or not
         :return: True if the relation is important, False otherwise
         """
-        important = [
-            RelationType.SEQUEL,
-            RelationType.PREQUEL,
-            RelationType.PARENT,
-            RelationType.SIDE_STORY,
-            RelationType.SUMMARY
-        ]
-        return self.type in important
+        # noinspection PyTypeChecker
+        return 200 > self.type.value
 
     def _serialize(self) -> Dict[str, str or int or float or bool or None
                                  or Dict or List or Tuple or Set]:

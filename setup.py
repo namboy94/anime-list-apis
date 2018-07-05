@@ -36,7 +36,6 @@ if __name__ == "__main__":
         url="https://gitlab.namibsun.net/namibsun/python/anime-list-apis",
         license="GNU GPL3",
         packages=find_packages(),
-        scripts=list(map(lambda x: os.path.join("bin", x), os.listdir("bin"))),
         install_requires=[
             "typing",
             "requests"

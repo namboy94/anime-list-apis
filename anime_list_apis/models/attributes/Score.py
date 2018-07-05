@@ -121,13 +121,9 @@ class Score(Serializable):
         if len(data) != 1:
             raise ValueError("Too many score values")
 
-        try:
-            score_type, score = list(data.items())[0]
+        score_type, score = list(data.items())[0]
 
-            cls.ensure_type(score, int)
+        cls.ensure_type(score, int)
 
-            generated = cls(score, ScoreType[score_type])  # type: Score
-            return generated
-
-        except KeyError:
-            raise ValueError("Missing Key")
+        generated = cls(score, ScoreType[score_type])  # type: Score
+        return generated

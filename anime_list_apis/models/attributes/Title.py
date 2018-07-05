@@ -133,13 +133,9 @@ class Title(Serializable):
         :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
-        try:
-            default = TitleType[data.pop("default")]
-            des = {}
-            for title_type, title in data.items():
-                des[TitleType[title_type]] = title
-            generated = cls(des, default=default)  # type: Title
-            return generated
-
-        except KeyError:
-            raise ValueError("Missing Key")
+        default = TitleType[data.pop("default")]
+        des = {}
+        for title_type, title in data.items():
+            des[TitleType[title_type]] = title
+        generated = cls(des, default=default)  # type: Title
+        return generated

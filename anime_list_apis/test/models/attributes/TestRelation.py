@@ -138,7 +138,6 @@ class TestRelation(TestCase):
             []
         ]:
             try:
-                print(data)
                 Relation.deserialize(data)
                 self.fail()
             except (ValueError, TypeError):

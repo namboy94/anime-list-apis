@@ -94,15 +94,8 @@ class Relation(Serializable):
         :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
-        try:
-            source = Id.deserialize(data["source"])
-            dest = Id.deserialize(data["dest"])
-            relation_type = RelationType[data["type"]]
-            print(source)
-            print(dest)
-            print(relation_type)
-            generated = cls(source, dest, relation_type)  # type: Relation
-            return generated
-
-        except KeyError:
-            raise ValueError("Invalid Key")
+        source = Id.deserialize(data["source"])
+        dest = Id.deserialize(data["dest"])
+        relation_type = RelationType[data["type"]]
+        generated = cls(source, dest, relation_type)  # type: Relation
+        return generated

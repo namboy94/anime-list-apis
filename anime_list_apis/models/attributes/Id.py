@@ -99,12 +99,8 @@ class Id(Serializable):
         :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
-        try:
-            des = {}
-            for key, value in data.items():
-                des[IdType[key]] = value
-            generated = cls(des)  # type: Id
-            return generated
-
-        except KeyError:
-            raise ValueError("Invalid Key")
+        des = {}
+        for key, value in data.items():
+            des[IdType[key]] = value
+        generated = cls(des)  # type: Id
+        return generated

@@ -75,13 +75,9 @@ class Date(Serializable):
         :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
-        try:
-            year = data["year"]
-            month = data["month"]
-            day = data["day"]
-            cls.__ensure_date_correct(year, month, day)
-            generated = cls(year, month, day)  # type: Date
-            return generated
-
-        except KeyError:
-            raise ValueError("Invalid Key")
+        year = data["year"]
+        month = data["month"]
+        day = data["day"]
+        cls.__ensure_date_correct(year, month, day)
+        generated = cls(year, month, day)  # type: Date
+        return generated

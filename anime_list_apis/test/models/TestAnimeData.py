@@ -17,7 +17,9 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
+import json
 from unittest import TestCase
+from typing import Dict, List, Set, Tuple
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.AiringStatus import AiringStatus
 from anime_list_apis.models.AnimeData import AnimeData
@@ -31,19 +33,20 @@ class TestAnimeData(TestCase):
     Tests the AnimeData Model class
     """
 
-    def test_generating_anime_data(self):
+    @staticmethod
+    def __generate_sample_anime_data() -> AnimeData:
         """
-        Tests generating an anime data object
-        :return: None
+        Generates a generic Anime Data object
+        :return: The generated anime data object
         """
-        id_one = Id({IdType.MYANIMELIST: 1})
-        id_two = Id({IdType.MYANIMELIST: 2})
-        title = Title({TitleType.ROMAJI: "Test"})
-        relations = [Relation(id_one, id_two, RelationType.SEQUEL)]
-        data = AnimeData(
-            id_one,
-            title,
-            relations,
+        return AnimeData(
+            Id({IdType.MYANIMELIST: 1}),
+            Title({TitleType.ROMAJI: "Test"}),
+            [Relation(
+                Id({IdType.MYANIMELIST: 1}),
+                Id({IdType.MYANIMELIST: 2}),
+                RelationType.SEQUEL
+            )],
             AiringStatus.FINISHED,
             Date(2018, 1, 1),
             Date(2018, 4, 4),
@@ -51,12 +54,136 @@ class TestAnimeData(TestCase):
             25,
             "https://example.com/image.png"
         )
-        self.assertEqual(data.id, id_one)
-        self.assertEqual(data.title, title)
-        self.assertEqual(data.relations, relations)
-        self.assertEqual(data.airing_state, AiringStatus.FINISHED)
+
+    @staticmethod
+    def __generate_sample_serialized_anime_data() -> \
+            Dict[str, str or int or float or bool or None
+                 or Dict or List or Tuple or Set]:
+        """
+        Generates some sample serialized anime data
+        :return: The serialized sample data
+        """
+        return {
+            "id": Id({IdType.MYANIMELIST: 1}).serialize(),
+            "title": Title({TitleType.ROMAJI: "Test"}).serialize(),
+            "relations": [
+                Relation(
+                    Id({IdType.MYANIMELIST: 1}),
+                    Id({IdType.MYANIMELIST: 2}),
+                    RelationType.SEQUEL
+                ).serialize()
+            ],
+            "airing_status": AiringStatus.FINISHED.name,
+            "start_date": Date(2018, 1, 1).serialize(),
+            "end_date": Date(2018, 4, 4).serialize(),
+            "episode_count": 12,
+            "episode_duration": 25,
+            "cover_url": "https://example.com/image.png"
+        }
+
+    def test_generating_anime_data(self):
+        """
+        Tests generating an anime data object
+        :return: None
+        """
+        data = self.__generate_sample_anime_data()
+        self.assertEqual(data.id, Id({IdType.MYANIMELIST: 1}))
+        self.assertEqual(data.title, Title({TitleType.ROMAJI: "Test"}))
+        self.assertEqual(
+            data.relations,
+            [Relation(
+                Id({IdType.MYANIMELIST: 1}),
+                Id({IdType.MYANIMELIST: 2}),
+                RelationType.SEQUEL
+            )]
+        )
+        self.assertEqual(data.airing_status, AiringStatus.FINISHED)
         self.assertEqual(data.start_date, Date(2018, 1, 1))
         self.assertEqual(data.end_date, Date(2018, 4, 4))
-        self.assertEqual(data.episodes, 12)
-        self.assertEqual(data.runtime, 25)
+        self.assertEqual(data.episode_count, 12)
+        self.assertEqual(data.episode_duration, 25)
         self.assertEqual(data.cover_url, "https://example.com/image.png")
+
+    def test_generating_with_none_value(self):
+        """
+        Tests using a valid None value in the constructor
+        :return: None
+        """
+        serialized = self.__generate_sample_serialized_anime_data()
+        serialized["end_date"] = None
+        data = AnimeData.deserialize(serialized)
+        self.assertEqual(data.end_date, None)
+
+    def test_serialization(self):
+        """
+        Tests serializing a Date object
+        :return: None
+        """
+        self.assertEqual(
+            self.__generate_sample_anime_data().serialize(),
+            self.__generate_sample_serialized_anime_data()
+        )
+
+    def test_deserialization(self):
+        """
+        Tests deserializing a Date object
+        :return: None
+        """
+        self.assertEqual(
+            AnimeData.deserialize(
+                self.__generate_sample_serialized_anime_data()
+            ),
+            self.__generate_sample_anime_data()
+        )
+
+    def test_invalid_deserialization(self):
+        """
+        Tests that invalid serialized data raises ValueErrors when deserialized
+        :return: None
+        """
+        def attempt_deserialize(data: dict):
+            try:
+                AnimeData.deserialize(data)
+                self.fail()
+            except (ValueError, TypeError):
+                pass
+
+        sample = self.__generate_sample_serialized_anime_data()
+        for key, value in sample.items():
+
+            for faux_value in [2000, "Hello", Id({IdType.KITSU: 1})]:
+                if type(faux_value) != type(value):
+                    copy = sample.copy()
+                    copy[key] = faux_value
+                    attempt_deserialize(copy)
+
+            copy = sample.copy()
+            copy.pop(key)
+            attempt_deserialize(copy)
+
+    def test_equality(self):
+        """
+        Tests that the equality of the objects is handled correctly
+        :return: None
+        """
+        one = self.__generate_sample_anime_data()
+        two = self.__generate_sample_anime_data()
+
+        self.assertEqual(one, two)
+
+        two.id = Id({IdType.KITSU: 1})
+        self.assertNotEqual(one, two)
+        two = self.__generate_sample_anime_data()
+
+        two.start_date = None
+        self.assertNotEqual(one, two)
+
+    def test_string_representation(self):
+        """
+        Tests that the string representation is correct
+        :return: None
+        """
+        data = self.__generate_sample_anime_data()
+        representation = str(data)
+        serialised = json.loads(representation)
+        self.assertEqual(data, AnimeData.deserialize(serialised))

@@ -54,7 +54,10 @@ class Serializable:
         :raises ValueError: If the data could not be deserialized
         """
         cls.ensure_type(data, dict)
-        return cls._deserialize(data)  # type: cls
+        try:
+            return cls._deserialize(data)  # type: cls
+        except KeyError as e:
+            raise ValueError("Missing key: " + str(e))
 
     @classmethod
     def _deserialize(cls, data: Dict[str, str or int or float or bool or None
@@ -92,20 +95,24 @@ class Serializable:
     def __str__(self) -> str:
         """
         Generates a string representation of this object.
-        By default, this prints valid JSON.
+        By default, this returns valid JSON.
         :return: The string representation of this object
         """
         return json.dumps(self.serialize())
 
     @staticmethod
-    def type_check(obj: object, typ: type) -> bool:
+    def type_check(obj: object, typ: type, none_allowed: bool = False) -> bool:
         """
         Checks if an object is an instance of a type
         :param obj: The object to check
         :param typ: The type it should be
+        :param none_allowed: If True, allows None values
         :return: True if the object is of that type, else False
         """
-        if not isinstance(obj, typ):
+        if none_allowed and obj is None:
+            return True
+
+        elif not isinstance(obj, typ):
             return False
 
         # Since bools are ints, make sure that an int object
@@ -117,13 +124,14 @@ class Serializable:
             return True
 
     @classmethod
-    def ensure_type(cls, obj: object, typ: type):
+    def ensure_type(cls, obj: object, typ: type, none_allowed: bool = False):
         """
         Raises a TypeError if the object does not match the type
         :param obj: The object to check
         :param typ: The type the object should be
+        :param none_allowed: If True, allows None values
         :return: None
         :raises TypeError: If the types do not match
         """
-        if not cls.type_check(obj, typ):
+        if not cls.type_check(obj, typ, none_allowed):
             raise TypeError(str(obj) + " is not of type " + str(typ))

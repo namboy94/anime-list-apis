@@ -49,6 +49,40 @@ class TestRelation(TestCase):
             except TypeError:
                 pass
 
+    def test_important_relations(self):
+        """
+        Tests if relations are correctly identified as "important"
+        :return: None
+        """
+        source = Id({IdType.MYANIMELIST: 1})
+        dest = Id({IdType.MYANIMELIST: 2})
+        for relation_type, important in {
+            RelationType.SEQUEL: True,
+            RelationType.PREQUEL: True,
+            RelationType.PARENT: True,
+            RelationType.SIDE_STORY: True,
+            RelationType.SUMMARY: True,
+            RelationType.SPIN_OFF: False,
+            RelationType.CHARACTER: False,
+            RelationType.ADAPTATION: False,
+            RelationType.OTHER: False
+        }.items():
+            relation = Relation(source, dest, relation_type)
+            self.assertEqual(relation.is_important(), important)
+
+    def test_using_same_ids(self):
+        """
+        Makes sure that using the same ID for both the source and the
+        destination results in an error
+        :return: None
+        """
+        try:
+            source = Id({IdType.MYANIMELIST: 1})
+            Relation(source, source, RelationType.OTHER)
+            self.fail()
+        except ValueError:
+            pass
+
     def test_serialization(self):
         """
         Tests serializing a Relation object

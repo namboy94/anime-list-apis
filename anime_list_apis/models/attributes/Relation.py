@@ -63,6 +63,21 @@ class Relation(Serializable):
         self.source, self.dest, self.type = source, dest, relation_type
         self.id = self.dest  # For easier access
 
+    def is_important(self) -> bool:
+        """
+        Checks if this relation is "important", meaning if it's a direct
+        connection (Sequel, Prequel, Parent, Side Story or a summary) or not
+        :return: True if the relation is important, False otherwise
+        """
+        important = [
+            RelationType.SEQUEL,
+            RelationType.PREQUEL,
+            RelationType.PARENT,
+            RelationType.SIDE_STORY,
+            RelationType.SUMMARY
+        ]
+        return self.type in important
+
     def _serialize(self) -> Dict[str, str or int or float or bool or None
                                  or Dict or List or Tuple or Set]:
         """

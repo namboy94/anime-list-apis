@@ -22,5 +22,5 @@ from unittest import TestCase
 
 class TestUserEntryData(TestCase):
     """
-    Test the UserEntryData Model class
+    Tests the UserEntryData Model class
     """

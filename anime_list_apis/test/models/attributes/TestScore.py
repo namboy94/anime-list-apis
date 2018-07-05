@@ -24,7 +24,7 @@ from anime_list_apis.models.attributes.Score import Score, ScoreType
 
 class TestScore(TestCase):
     """
-    Test the Score Attribute class
+    Tests the Score Attribute class
     """
 
     def test_initializing_different_score_types(self):

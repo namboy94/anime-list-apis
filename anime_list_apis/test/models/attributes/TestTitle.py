@@ -24,7 +24,7 @@ from anime_list_apis.models.attributes.Title import Title, TitleType
 
 class TestTitle(TestCase):
     """
-    Test the Title Attribute class
+    Tests the Title Attribute class
     """
 
     def test_title_construction(self):

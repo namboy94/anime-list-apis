@@ -18,9 +18,31 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from unittest import TestCase
+# from anime_list_apis.models.AnimeData import AnimeData
+# from anime_list_apis.models.attributes.Id import Id, IdType
+# from anime_list_apis.models.attributes.Title import Title, TitleType
 
 
 class TestAnimeData(TestCase):
     """
-    Test the AnimeData Model class
+    Tests the AnimeData Model class
     """
+
+    def test_generating_anime_data(self):
+        """
+        Tests generating an anime data object
+        :return: None
+        """
+        """
+        data = AnimeData(
+            Id({IdType.MYANIMELIST: 1}),
+            Title({TitleType.ROMAJI: "Test"}),
+            "Airing Status",
+            "Episodes",
+            "Relations",
+            "Start Date",
+            "End Date",
+            "Episode Duration",
+            "CoverUrl"
+        )
+        """

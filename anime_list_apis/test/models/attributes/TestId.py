@@ -24,7 +24,7 @@ from anime_list_apis.models.attributes.Id import Id, IdType
 
 class TestId(TestCase):
     """
-    Test the Id Attribute class
+    Tests the Id Attribute class
     """
 
     def test_fetching_different_id_types(self):

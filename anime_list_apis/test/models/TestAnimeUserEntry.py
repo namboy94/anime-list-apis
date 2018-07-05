@@ -22,5 +22,5 @@ from unittest import TestCase
 
 class TestAnimeUserEntry(TestCase):
     """
-    Test the AnimeUserEntry Model class
+    Tests the AnimeUserEntry Model class
     """

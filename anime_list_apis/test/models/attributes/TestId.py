@@ -65,6 +65,21 @@ class TestId(TestCase):
         self.assertEqual(200, _id.get(IdType.ANILIST))
         self.assertEqual(300, _id.get(IdType.KITSU))
 
+    def test_setting_invalid_ids(self):
+        """
+        Tests setting ids that are invalid types
+        :return: None
+        """
+        _id = Id({IdType.MYANIMELIST: 1})
+
+        for value in [None, "100", 100.0, True]:
+            try:
+                # noinspection PyTypeChecker
+                _id.set(value, IdType.ANILIST)
+                self.fail()
+            except TypeError:
+                pass
+
     def test_no_entries(self):
         """
         Tests that the constructor raises a ValueError when no ID at all is
@@ -89,3 +104,57 @@ class TestId(TestCase):
             self.fail()
         except ValueError:
             pass
+
+    def test_serialization(self):
+        """
+        Tests serializing an ID object
+        :return: None
+        """
+        ob = Id({IdType.MYANIMELIST: 1, IdType.ANILIST: 2})
+        data = ob.serialize()
+
+        self.assertEqual(
+            data,
+            {"MYANIMELIST": 1, "ANILIST": 2}
+        )
+
+    def test_deserialization(self):
+        """
+        Tests deserializing an ID object
+        :return: None
+        """
+        self.assertEqual(
+            Id.deserialize({"MYANIMELIST": 1, "ANILIST": 2}),
+            Id({IdType.MYANIMELIST: 1, IdType.ANILIST: 2})
+        )
+
+    def test_invalid_deserialization(self):
+        """
+        Tests that invalid serialized data raises ValueErrors when deserialized
+        :return: None
+        """
+        for data in [
+            {"A": 1},
+            {},
+            {"ANILIST": "1"},
+            [{"ANILIST": 1}],
+            {"Anilist": 1},
+            {"ANILIST": None}
+        ]:
+            try:
+                Id.deserialize(data)
+                self.fail()
+            except ValueError:
+                pass
+
+    def test_equality(self):
+        """
+        Tests that the equality of the objects is handled correctly
+        :return: None
+        """
+        one = Id({IdType.MYANIMELIST: 1, IdType.ANILIST: 2})
+        two = Id({IdType.MYANIMELIST: 1, IdType.ANILIST: 2})
+        three = Id({IdType.MYANIMELIST: 1})
+
+        self.assertEqual(one, two)
+        self.assertNotEqual(two, three)

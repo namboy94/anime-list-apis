@@ -18,7 +18,8 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from enum import Enum
-from typing import Dict
+from typing import Dict, List, Tuple, Set
+from anime_list_apis.models.Serializable import Serializable
 
 
 class TitleType(Enum):
@@ -30,7 +31,7 @@ class TitleType(Enum):
     JAPANESE = 3
 
 
-class Title:
+class Title(Serializable):
     """
     Models a title of an entry
     """
@@ -62,7 +63,7 @@ class Title:
                     default = _type
 
         self.__titles = titles
-        self.__default = default
+        self.default = default
 
         for title_type in TitleType:
             if title_type not in self.__titles:
@@ -78,6 +79,57 @@ class Title:
                  the provided title exists
         """
         if title_type is None:
-            return self.__titles[self.__default]
+            return self.__titles[self.default]
         else:
             return self.__titles[title_type]
+        
+    def set(self, title: str, title_type: TitleType):
+        """
+        Sets the title of a title type
+        :param title: The title string to set
+        :param title_type: The type of that title
+        :return: None
+        :raises TypeError: If the type of the title string is wrong
+        """
+        self.__titles[title_type] = title
+        
+    def change_default_title_type(self, title_type: TitleType):
+        """
+        Sets the default title type
+        :param title_type: The new default title type
+        :return: None
+        :raises ValueError: If there exists no title entry for the provided
+                            title type
+        """
+        if title_type in self.__titles:
+            self.default = title_type
+        else:
+            raise ValueError("Title Type has no title")
+
+    def serialize(self) -> Dict[str, str or int or float or bool or None
+                                or Dict or List or Tuple or Set]:
+        """
+        Serializes the object into a dictionary
+        :return: The serialized form of this object
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def deserialize(cls, data: Dict[str, str or int or float or bool or None
+                                    or Dict or List or Tuple or Set]):
+        """
+        Deserializes a dictionary into an object of this type
+        :param data: The data to deserialize
+        :return: The deserialized object
+        :raises ValueError: If the data could not be deserialized
+        """
+        raise NotImplementedError()
+
+    def _equals(self, other: object) -> bool:
+        """
+        Checks if this object is equal to another object.
+        The object is guaranteed to be an instance of this class or a subclass
+        :param other: The other object to compare this object to
+        :return: True if the objects are equal, False otherwise
+        """
+        raise NotImplementedError()

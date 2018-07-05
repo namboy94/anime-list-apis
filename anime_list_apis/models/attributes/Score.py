@@ -18,6 +18,8 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from enum import Enum
+from typing import Dict, List, Tuple, Set
+from anime_list_apis.models.Serializable import Serializable
 
 
 class ScoreType(Enum):
@@ -31,7 +33,7 @@ class ScoreType(Enum):
     PERCENTAGE = 100
 
 
-class Score:
+class Score(Serializable):
     """
     Class that models a score. Allows for different score types.
     """
@@ -65,6 +67,15 @@ class Score:
         else:
             return self.__convert(self.__score, self.mode, score_type)
 
+    def convert(self, score_type: ScoreType):
+        """
+        Converts the internal score representation to another score type
+        :param score_type: The score type to which to convert to
+        :return: None
+        """
+        self.__score = self.__convert(self.__score, self.mode, score_type)
+        self.mode = score_type
+
     # noinspection PyMethodMayBeStatic
     def __convert(self, score: int, source: ScoreType, dest: ScoreType) -> int:
         """
@@ -80,3 +91,31 @@ class Score:
         percentage = score / source.value
         converted = percentage * dest.value
         return round(converted)
+
+    def serialize(self) -> Dict[str, str or int or float or bool or None
+                                or Dict or List or Tuple or Set]:
+        """
+        Serializes the object into a dictionary
+        :return: The serialized form of this object
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def deserialize(cls, data: Dict[str, str or int or float or bool or None
+                                    or Dict or List or Tuple or Set]):
+        """
+        Deserializes a dictionary into an object of this type
+        :param data: The data to deserialize
+        :return: The deserialized object
+        :raises ValueError: If the data could not be deserialized
+        """
+        raise NotImplementedError()
+
+    def _equals(self, other: object) -> bool:
+        """
+        Checks if this object is equal to another object.
+        The object is guaranteed to be an instance of this class or a subclass
+        :param other: The other object to compare this object to
+        :return: True if the objects are equal, False otherwise
+        """
+        raise NotImplementedError()

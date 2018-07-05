@@ -85,3 +85,80 @@ class TestScore(TestCase):
         self.assertEqual(score.get(ScoreType.TEN_POINT), 8)
         self.assertEqual(score.get(ScoreType.FIVE_POINT), 4)
         self.assertEqual(score.get(ScoreType.THREE_POINT), 2)
+
+    def test_permanent_conversion(self):
+        """
+        Tests converting the internal score to another score type
+        :return: None
+        """
+        score = Score(75, ScoreType.PERCENTAGE)
+        score.convert(ScoreType.TEN_POINT)
+        self.assertEqual(score.get(), 8)
+
+    def test_serialization(self):
+        """
+        Tests serializing and deserializing an ID object
+        :return: None
+        """
+        ob = Score(50, ScoreType.PERCENTAGE)
+        self.assertEqual(
+            ob.serialize(),
+            {"PERCENTAGE": 50}
+        )
+        ob.convert(ScoreType.TEN_POINT)
+        self.assertEqual(
+            ob.serialize(),
+            {"TEN_POINT": 5}
+        )
+
+    def test_deserialization(self):
+        """
+        Tests deserializing an ID object
+        :return: None
+        """
+        self.assertEqual(
+            Score.deserialize({"TEN_POINT_DECIMAL": 7}),
+            Score(7, ScoreType.TEN_POINT_DECIMAL)
+        )
+
+    def test_invalid_deserialization(self):
+        """
+        Tests that invalid serialized data raises ValueErrors when deserialized
+        :return: None
+        """
+        for data in [
+            {"A": 1},
+            {},
+            {"TEN_POINT": "1"},
+            [{"TEN_POINT": 1}],
+            {"Ten_Point": 1},
+            {"TEN_POINT": -1},
+            {"PERCENTAGE": 101}
+        ]:
+            try:
+                Score.deserialize(data)
+                self.fail()
+            except ValueError:
+                pass
+
+    def test_equality(self):
+        """
+        Tests that the equality of the objects is handled correctly
+        :return: None
+        """
+        one = Score(59, ScoreType.PERCENTAGE)
+        two = Score(59, ScoreType.PERCENTAGE)
+        three = Score(6, ScoreType.TEN_POINT)
+        four = Score(6, ScoreType.TEN_POINT_DECIMAL)
+
+        self.assertEqual(one, two)
+        self.assertNotEqual(two, three)
+        self.assertNotEqual(two, four)
+        self.assertNotEqual(three, four)
+
+        three.convert(ScoreType.PERCENTAGE)
+        four.convert(ScoreType.PERCENTAGE)
+
+        self.assertEqual(two, three)
+        self.assertNotEqual(two, four)
+        self.assertNotEqual(three, four)

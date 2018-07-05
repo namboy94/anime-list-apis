@@ -18,9 +18,12 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from unittest import TestCase
-# from anime_list_apis.models.AnimeData import AnimeData
-# from anime_list_apis.models.attributes.Id import Id, IdType
-# from anime_list_apis.models.attributes.Title import Title, TitleType
+from anime_list_apis.models.attributes.Relation import Relation, RelationType
+from anime_list_apis.models.attributes.AiringStatus import AiringStatus
+from anime_list_apis.models.AnimeData import AnimeData
+from anime_list_apis.models.attributes.Id import Id, IdType
+from anime_list_apis.models.attributes.Title import Title, TitleType
+from anime_list_apis.models.attributes.Date import Date
 
 
 class TestAnimeData(TestCase):
@@ -33,16 +36,27 @@ class TestAnimeData(TestCase):
         Tests generating an anime data object
         :return: None
         """
-        """
+        id_one = Id({IdType.MYANIMELIST: 1})
+        id_two = Id({IdType.MYANIMELIST: 2})
+        title = Title({TitleType.ROMAJI: "Test"})
+        relations = [Relation(id_one, id_two, RelationType.SEQUEL)]
         data = AnimeData(
-            Id({IdType.MYANIMELIST: 1}),
-            Title({TitleType.ROMAJI: "Test"}),
-            "Airing Status",
-            "Episodes",
-            "Relations",
-            "Start Date",
-            "End Date",
-            "Episode Duration",
-            "CoverUrl"
+            id_one,
+            title,
+            relations,
+            AiringStatus.FINISHED,
+            Date(2018, 1, 1),
+            Date(2018, 4, 4),
+            12,
+            25,
+            "https://example.com/image.png"
         )
-        """
+        self.assertEqual(data.id, id_one)
+        self.assertEqual(data.title, title)
+        self.assertEqual(data.relations, relations)
+        self.assertEqual(data.airing_state, AiringStatus.FINISHED)
+        self.assertEqual(data.start_date, Date(2018, 1, 1))
+        self.assertEqual(data.end_date, Date(2018, 4, 4))
+        self.assertEqual(data.episodes, 12)
+        self.assertEqual(data.runtime, 25)
+        self.assertEqual(data.cover_url, "https://example.com/image.png")

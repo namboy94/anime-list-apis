@@ -20,24 +20,24 @@ LICENSE"""
 import json
 from unittest import TestCase
 from typing import Dict, Tuple, Set, List
-from anime_list_apis.models.UserEntryData import UserEntryData
+from anime_list_apis.models.AnimeUserData import AnimeUserData
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
 
 
-class TestUserEntryData(TestCase):
+class TestAnimeUserData(TestCase):
     """
-    Tests the UserEntryData Model class
+    Tests the AnimeUserData Model class
     """
 
     @staticmethod
-    def generate_sample_user_data() -> UserEntryData:
+    def generate_sample_user_data() -> AnimeUserData:
         """
-        Generates a sample UserEntryData object
-        :return: The generated UserEntryData object
+        Generates a sample AnimeUserData object
+        :return: The generated AnimeUserData object
         """
-        return UserEntryData(
+        return AnimeUserData(
             "namboy94",
             Score(55, ScoreType.PERCENTAGE),
             WatchingStatus.COMPLETED,
@@ -51,13 +51,13 @@ class TestUserEntryData(TestCase):
             -> Dict[str, str or int or float or bool or None
                     or Dict or List or Tuple or Set]:
         """
-        Generates a sample serialized UserEntryData object
+        Generates a sample serialized AnimeUserData object
         :return: The serialized data
         """
         return {
             "username": "namboy94",
             "score": Score(55, ScoreType.PERCENTAGE).serialize(),
-            "watching_status:": "COMPLETED",
+            "watching_status": "COMPLETED",
             "episode_progress": 12,
             "begin_date": Date(2018, 1, 1).serialize(),
             "complete_date": Date(2018, 4, 4).serialize()
@@ -76,32 +76,38 @@ class TestUserEntryData(TestCase):
         self.assertEqual(data.begin_date, Date(2018, 1, 1))
         self.assertEqual(data.complete_date, Date(2018, 4, 4))
 
-    def test_completeness(self):
+    def test_valid(self):
         """
-        Makes sure that it's possible to check if an entry is complete
+        Makes sure that it's possible to check if an entry is valid
         :return: None
         """
         entry = self.generate_sample_user_data()
-        self.assertTrue(entry.is_complete_entry())
+        self.assertTrue(entry.is_valid_entry())
 
         entry.complete_date = None
-        self.assertFalse(entry.is_complete_entry())
+        self.assertFalse(entry.is_valid_entry())
 
         entry.watching_status = WatchingStatus.WATCHING
-        self.assertTrue(entry.is_complete_entry())
+        self.assertTrue(entry.is_valid_entry())
 
         entry.begin_date = None
-        self.assertFalse(entry.is_complete_entry())
+        self.assertFalse(entry.is_valid_entry())
 
         entry.watching_status = WatchingStatus.PLANNING
-        self.assertTrue(entry.is_complete_entry())
+        self.assertFalse(entry.is_valid_entry())
+
+        entry.score = Score(0, ScoreType.PERCENTAGE)
+        self.assertTrue(entry.is_valid_entry())
 
         entry = self.generate_sample_user_data()
-        entry.score = None
-        self.assertFalse(entry.is_complete_entry())
+        entry.score = Score(0, ScoreType.PERCENTAGE)
+        self.assertFalse(entry.is_valid_entry())
 
-        entry.watching_status = WatchingStatus.COMPLETED
-        self.assertTrue(entry.is_complete_entry())
+        entry.watching_status = WatchingStatus.WATCHING
+        self.assertFalse(entry.is_valid_entry())
+
+        entry.complete_date = None
+        self.assertTrue(entry.is_valid_entry())
 
     def test_none_parameters(self):
         """
@@ -115,21 +121,21 @@ class TestUserEntryData(TestCase):
         for parameter in allowed:
             copy = data.copy()
             copy[parameter] = None
-            entry = UserEntryData.deserialize(copy)
+            entry = AnimeUserData.deserialize(copy)
             self.assertEqual(entry.serialize()[parameter], None)
 
         for parameter in list(filter(lambda x: x not in allowed, data.keys())):
             copy = data.copy()
             copy[parameter] = None
             try:
-                UserEntryData.deserialize(copy)
+                AnimeUserData.deserialize(copy)
                 self.fail()
             except (ValueError, TypeError):
                 pass
 
     def test_serialization(self):
         """
-        Tests serializing a UserEntryData object
+        Tests serializing a AnimeUserData object
         :return: None
         """
         self.assertEqual(
@@ -139,11 +145,11 @@ class TestUserEntryData(TestCase):
 
     def test_deserialization(self):
         """
-        Tests deserializing a UserEntryData object
+        Tests deserializing a AnimeUserData object
         :return: None
         """
         self.assertEqual(
-            UserEntryData.deserialize(
+            AnimeUserData.deserialize(
                 self.generate_sample_serialized_user_data()
             ),
             self.generate_sample_user_data()
@@ -156,7 +162,7 @@ class TestUserEntryData(TestCase):
         """
         def attempt_deserialize(data: dict):
             try:
-                UserEntryData.deserialize(data)
+                AnimeUserData.deserialize(data)
                 self.fail()
             except (ValueError, TypeError):
                 pass
@@ -199,4 +205,4 @@ class TestUserEntryData(TestCase):
         data = self.generate_sample_user_data()
         representation = str(data)
         serialised = json.loads(representation)
-        self.assertEqual(data, UserEntryData.deserialize(serialised))
+        self.assertEqual(data, AnimeUserData.deserialize(serialised))

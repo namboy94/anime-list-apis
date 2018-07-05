@@ -54,7 +54,7 @@ class AnimeData(Serializable):
         :param start_date: The day the anime started airing
         :param end_date: The day the last episode aired
         :param episode_count: The amount of episodes of the anime
-        :param episode_duration: The duration of the episodes
+        :param episode_duration: The duration of the episodes in minutes
         :param cover_url: An URL pointing to a cover image for the anime
         :raises TypeError: If any of the parameters has a wrong type
         """

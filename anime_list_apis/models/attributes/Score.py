@@ -98,7 +98,7 @@ class Score(Serializable):
         Serializes the object into a dictionary
         :return: The serialized form of this object
         """
-        raise NotImplementedError()
+        return {self.mode.name: self.__score}
 
     @classmethod
     def deserialize(cls, data: Dict[str, str or int or float or bool or None
@@ -109,13 +109,17 @@ class Score(Serializable):
         :return: The deserialized object
         :raises ValueError: If the data could not be deserialized
         """
-        raise NotImplementedError()
+        if len(data) != 1:
+            raise ValueError("Too many score values")
 
-    def _equals(self, other: object) -> bool:
-        """
-        Checks if this object is equal to another object.
-        The object is guaranteed to be an instance of this class or a subclass
-        :param other: The other object to compare this object to
-        :return: True if the objects are equal, False otherwise
-        """
-        raise NotImplementedError()
+        try:
+            score_type, score = list(data.items())[0]
+
+            if not isinstance(score, int) or isinstance(score, bool):
+                raise ValueError("Invalid type for score")
+
+            generated = cls(score, ScoreType[score_type])  # type: Score
+            return generated
+
+        except KeyError:
+            raise ValueError("Missing Key")

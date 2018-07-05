@@ -49,7 +49,9 @@ class Title(Serializable):
         :raises ValueError: In case no valid titles were provided
         """
         titles = {
-            key: value for key, value in titles.items() if value is not None
+            key: value for key, value in titles.items()
+            if value is not None
+            and isinstance(value, str)
         }
         if len(titles) == 0:
             raise ValueError("At least one title required")
@@ -82,7 +84,7 @@ class Title(Serializable):
             return self.__titles[self.default]
         else:
             return self.__titles[title_type]
-        
+
     def set(self, title: str, title_type: TitleType):
         """
         Sets the title of a title type
@@ -91,8 +93,10 @@ class Title(Serializable):
         :return: None
         :raises TypeError: If the type of the title string is wrong
         """
+        if not isinstance(title, str):
+            raise TypeError("Not a string")
         self.__titles[title_type] = title
-        
+
     def change_default_title_type(self, title_type: TitleType):
         """
         Sets the default title type
@@ -101,7 +105,7 @@ class Title(Serializable):
         :raises ValueError: If there exists no title entry for the provided
                             title type
         """
-        if title_type in self.__titles:
+        if self.__titles[title_type] is not None:
             self.default = title_type
         else:
             raise ValueError("Title Type has no title")
@@ -112,7 +116,11 @@ class Title(Serializable):
         Serializes the object into a dictionary
         :return: The serialized form of this object
         """
-        raise NotImplementedError()
+        data = {}
+        for title_type, title in self.__titles.items():
+            data[title_type.name] = title
+        data["default"] = self.default.name
+        return data
 
     @classmethod
     def deserialize(cls, data: Dict[str, str or int or float or bool or None
@@ -123,13 +131,13 @@ class Title(Serializable):
         :return: The deserialized object
         :raises ValueError: If the data could not be deserialized
         """
-        raise NotImplementedError()
+        try:
+            default = TitleType[data.pop("default")]
+            des = {}
+            for title_type, title in data.items():
+                des[TitleType[title_type]] = title
+            generated = cls(des, default=default)  # type: Title
+            return generated
 
-    def _equals(self, other: object) -> bool:
-        """
-        Checks if this object is equal to another object.
-        The object is guaranteed to be an instance of this class or a subclass
-        :param other: The other object to compare this object to
-        :return: True if the objects are equal, False otherwise
-        """
-        raise NotImplementedError()
+        except KeyError:
+            raise ValueError("Missing Key")

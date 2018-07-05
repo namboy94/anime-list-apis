@@ -45,7 +45,10 @@ class Id(Serializable):
         :raises ValueError: In case no valid ID was provided
         """
         ids = {
-            key: value for key, value in ids.items() if value is not None
+            key: value for key, value in ids.items()
+            if value is not None
+            and isinstance(value, int)
+            and not isinstance(value, bool)
         }
         if len(ids) == 0:
             raise ValueError("At least one ID required")
@@ -55,8 +58,6 @@ class Id(Serializable):
             if id_type not in self.__ids:
                 # noinspection PyTypeChecker
                 self.__ids[id_type] = None
-
-        print(self.__ids)
 
     def get(self, id_type: IdType) -> int or None:
         """
@@ -74,7 +75,7 @@ class Id(Serializable):
         :return: None
         :raises TypeError: If the provided ID is not an integer
         """
-        if not isinstance(_id, int):
+        if not isinstance(_id, int) or isinstance(_id, bool):
             raise TypeError("Not an integer")
         else:
             self.__ids[id_type] = _id
@@ -85,7 +86,10 @@ class Id(Serializable):
         Serializes the object into a dictionary
         :return: The serialized form of this object
         """
-        raise NotImplementedError()
+        data = {}
+        for key, value in self.__ids.items():
+            data[key.name] = value
+        return data
 
     @classmethod
     def deserialize(cls, data: Dict[str, str or int or float or bool or None
@@ -96,13 +100,12 @@ class Id(Serializable):
         :return: The deserialized object
         :raises ValueError: If the data could not be deserialized
         """
-        raise NotImplementedError()
+        try:
+            des = {}
+            for key, value in data.items():
+                des[IdType[key]] = value
+            generated = cls(des)  # type: Id
+            return generated
 
-    def _equals(self, other: object) -> bool:
-        """
-        Checks if this object is equal to another object.
-        The object is guaranteed to be an instance of this class or a subclass
-        :param other: The other object to compare this object to
-        :return: True if the objects are equal, False otherwise
-        """
-        raise NotImplementedError()
+        except KeyError:
+            raise ValueError("Invalid Key")

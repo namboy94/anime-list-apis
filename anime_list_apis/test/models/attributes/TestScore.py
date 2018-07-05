@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
+import json
 from unittest import TestCase
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 
@@ -130,7 +131,6 @@ class TestScore(TestCase):
             {"A": 1},
             {},
             {"TEN_POINT": "1"},
-            [{"TEN_POINT": 1}],
             {"Ten_Point": 1},
             {"TEN_POINT": -1},
             {"PERCENTAGE": 101}
@@ -156,9 +156,19 @@ class TestScore(TestCase):
         self.assertNotEqual(two, four)
         self.assertNotEqual(three, four)
 
-        three.convert(ScoreType.PERCENTAGE)
-        four.convert(ScoreType.PERCENTAGE)
+        two.convert(ScoreType.TEN_POINT)
 
         self.assertEqual(two, three)
         self.assertNotEqual(two, four)
-        self.assertNotEqual(three, four)
+
+        self.assertNotEqual(one, "Test")
+
+    def test_string_representation(self):
+        """
+        Tests that the string representation is correct
+        :return: None
+        """
+        score = Score(59, ScoreType.PERCENTAGE)
+        representation = str(score)
+        serialised = json.loads(representation)
+        self.assertEqual(score, Score.deserialize(serialised))

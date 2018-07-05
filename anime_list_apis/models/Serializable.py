@@ -1,7 +1,31 @@
+"""LICENSE
+Copyright 2018 Hermann Krumrey <hermann@krumreyh.com>
+
+This file is part of anime-list-apis.
+
+anime-list-apis is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+anime-list-apis is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
+LICENSE"""
+
+import json
 from typing import Dict, List, Tuple, Set
 
 
 class Serializable:
+    """
+    Abstract class that defines methods for subclasses to implement to make
+    sure that they can be serialized
+    """
 
     def serialize(self) -> Dict[str, str or int or float or bool or None
                                 or Dict or List or Tuple or Set]:
@@ -9,7 +33,7 @@ class Serializable:
         Serializes the object into a dictionary
         :return: The serialized form of this object
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     @classmethod
     def deserialize(cls, data: Dict[str, str or int or float or bool or None
@@ -20,7 +44,7 @@ class Serializable:
         :return: The deserialized object
         :raises ValueError: If the data could not be deserialized
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def _equals(self, other: object) -> bool:
         """
@@ -29,7 +53,8 @@ class Serializable:
         :param other: The other object to compare this object to
         :return: True if the objects are equal, False otherwise
         """
-        raise NotImplementedError()
+        # noinspection PyUnresolvedReferences
+        return self.serialize() == other.serialize()
 
     def __eq__(self, other: object) -> bool:
         """
@@ -41,3 +66,11 @@ class Serializable:
             return False
         else:
             return self._equals(other)
+
+    def __str__(self) -> str:
+        """
+        Generates a string representation of this object.
+        By default, this prints valid JSON.
+        :return: The string representation of this object
+        """
+        return json.dumps(self.serialize())

@@ -20,7 +20,7 @@ LICENSE"""
 import json
 from copy import deepcopy
 from unittest import TestCase
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Optional
 
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
@@ -60,8 +60,8 @@ class TestAnimeData(TestCase):
 
     @staticmethod
     def generate_sample_serialized_anime_data() -> \
-            Dict[str, str or int or float or bool or None
-                 or Dict or List or Tuple or Set]:
+            Dict[str, Optional[str or int or float or bool
+                 or Dict or List or Tuple or Set]]:
         """
         Generates some sample serialized anime data
         :return: The serialized sample data

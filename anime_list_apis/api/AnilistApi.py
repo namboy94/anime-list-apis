@@ -107,7 +107,7 @@ class AnilistApi(ApiInterface):
             self,
             media_type: MediaType,
             _id: int or Id
-    ) -> AnimeData or None:  # TODO Manga
+    ) -> Optional[AnimeData]:  # TODO Manga
         """
         Retrieves a single data object using the API
         :param media_type: The media type to retrieve
@@ -176,7 +176,7 @@ class AnilistApi(ApiInterface):
             query()
         """
 
-    def get_anilist_id_from_mal_id(self, mal_id: int) -> int or None:
+    def get_anilist_id_from_mal_id(self, mal_id: int) -> Optional[int]:
         """
         Retrieves an anilist ID from a myanimelist ID
         :param mal_id: The myanimelist ID
@@ -261,7 +261,7 @@ class AnilistApi(ApiInterface):
 
     @staticmethod
     def __graphql_query(query: str, variables: Dict[str, object]) \
-            -> Dict[str, object] or None:
+            -> Optional[Dict[str, object]]:
         """
         Executes a GraphQL query on the anilist API
         :param query: The query string
@@ -279,7 +279,7 @@ class AnilistApi(ApiInterface):
             return None
 
     @staticmethod
-    def __resolve_date(date_data: Dict[str, int]) -> Date or None:
+    def __resolve_date(date_data: Dict[str, int]) -> Optional[Date]:
         """
         Resolves a date dictionary into either a Date object or None
         :param date_data: The date data to use
@@ -295,7 +295,7 @@ class AnilistApi(ApiInterface):
             return None
         
     def __resolve_query_id(self, _id: int or Id, allow_mal: bool) \
-            -> Tuple[int, IdType] or None:
+            -> Optional[Tuple[int, IdType]]:
         """
         Calculates the ID value to use in a query
         :param _id: The ID, which may be an Id object or an int value

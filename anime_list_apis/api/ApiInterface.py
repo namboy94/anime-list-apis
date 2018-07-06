@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-from typing import List
+from typing import List, Optional
 from anime_list_apis.cache.Cacher import Cacher
 from anime_list_apis.models.AnimeData import AnimeData
 from anime_list_apis.models.AnimeListEntry import AnimeListEntry
@@ -43,7 +43,7 @@ class ApiInterface:
             self,
             media_type: MediaType,
             _id: int or Id
-    ) -> AnimeData or None:  # TODO Manga
+    ) -> Optional[AnimeData]:  # TODO Manga
         """
         Retrieves a single data object using the API
         :param media_type: The media type to retrieve
@@ -57,7 +57,7 @@ class ApiInterface:
             media_type: MediaType,
             _id: int or Id,
             username: str
-    ) -> AnimeListEntry:  # TODO Manga
+    ) -> Optional[AnimeListEntry]:  # TODO Manga
         """
         Retrieves a user list entry
         :param media_type: The media type to fetch
@@ -79,7 +79,7 @@ class ApiInterface:
         raise NotImplementedError()
 
     def get_anime_data(self, _id: int or Id) \
-            -> AnimeData or None:
+            -> Optional[AnimeData]:
         """
         Shortcut for get_data that retrieves only Anime media
         :param _id: The ID to fetch. May be int or Id object
@@ -88,7 +88,7 @@ class ApiInterface:
         return self.get_data(MediaType.ANIME, _id)
 
     def get_anime_list_entry(self, _id: int or Id, username: str) \
-            -> AnimeListEntry or None:
+            -> Optional[AnimeListEntry]:
         """
         Retrieves a user's list entry for a single entry
         :param _id: The ID to fetch. May be int or an Id object

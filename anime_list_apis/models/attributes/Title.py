@@ -18,7 +18,7 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from enum import Enum
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple, Set, Optional
 from anime_list_apis.models.Serializable import Serializable
 
 
@@ -74,7 +74,7 @@ class Title(Serializable):
                 # noinspection PyTypeChecker
                 self.__titles[title_type] = None
 
-    def get(self, title_type: TitleType = None) -> str or None:
+    def get(self, title_type: TitleType = None) -> Optional[str]:
         """
         Retrieves the title in the provided title format
         :param title_type: The title type in which to retrieve the title.
@@ -111,8 +111,8 @@ class Title(Serializable):
         else:
             raise ValueError("Title Type has no title")
 
-    def _serialize(self) -> Dict[str, str or int or float or bool or None
-                                 or Dict or List or Tuple or Set]:
+    def _serialize(self) -> Dict[str, Optional[str or int or float or bool
+                                 or Dict or List or Tuple or Set]]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object
@@ -124,8 +124,8 @@ class Title(Serializable):
         return data
 
     @classmethod
-    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
-                                     or Dict or List or Tuple or Set]):
+    def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
+                                     or Dict or List or Tuple or Set]]):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize

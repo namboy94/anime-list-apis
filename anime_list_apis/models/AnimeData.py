@@ -18,7 +18,7 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from copy import deepcopy
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple, Set, Optional
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id
@@ -39,11 +39,11 @@ class AnimeData(Serializable):
             title: Title,
             relations: List[Relation],
             airing_status: AiringStatus,
-            airing_start: Date or None,
-            airing_end: Date or None,
-            episode_count: int or None,
-            episode_duration: int or None,
-            cover_url: str or None
+            airing_start: Optional[Date],
+            airing_end: Optional[Date],
+            episode_count: Optional[int],
+            episode_duration: Optional[int],
+            cover_url: Optional[str]
     ):
         """
         Initializes the Anime Data object and checks for type issues
@@ -82,8 +82,8 @@ class AnimeData(Serializable):
         self.episode_duration = episode_duration  # type: int
         self.cover_url = cover_url  # type: str
 
-    def _serialize(self) -> Dict[str, str or int or float or bool or None
-                                 or Dict or List or Tuple or Set]:
+    def _serialize(self) -> Dict[str, Optional[str or int or float or bool
+                                 or Dict or List or Tuple or Set]]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object
@@ -101,9 +101,9 @@ class AnimeData(Serializable):
         }
 
     @staticmethod
-    def __get_serialized(to_serialize: Serializable or None) \
-            -> None or Dict[str, str or int or float or bool or None
-                            or Dict or List or Tuple or Set]:
+    def __get_serialized(to_serialize: Optional[Serializable]) \
+            -> None or Dict[str, Optional[str or int or float or bool
+                            or Dict or List or Tuple or Set]]:
         """
         Checks if a serializable object is None or not and returns either
         None or the serialized dictionary accordingly
@@ -116,8 +116,8 @@ class AnimeData(Serializable):
             return to_serialize.serialize()
 
     @classmethod
-    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
-                                     or Dict or List or Tuple or Set]):
+    def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
+                                     or Dict or List or Tuple or Set]]):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize

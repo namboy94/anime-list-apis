@@ -19,7 +19,7 @@ LICENSE"""
 
 import os
 import json
-from typing import Dict
+from typing import Dict, Optional
 
 from anime_list_apis.models.AnimeData import AnimeData
 from anime_list_apis.models.attributes.Id import IdType, Id
@@ -125,7 +125,7 @@ class Cacher:
         self.__cache[media_type][site_type][_id] = entry
 
     def get(self, media_type: MediaType, site_type: IdType, _id: int or Id) \
-            -> AnimeData or None:  # TODO Manga
+            -> Optional[AnimeData]:  # TODO Manga
         """
         Retrieves an entry from the cache
         :param media_type: The type of the media

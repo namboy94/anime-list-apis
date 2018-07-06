@@ -18,7 +18,7 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from datetime import datetime
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple, Set, Optional
 from anime_list_apis.models.Serializable import Serializable
 
 
@@ -53,8 +53,8 @@ class Date(Serializable):
         list(map(lambda x: cls.ensure_type(x, int), [year, month, day]))
         datetime(year, month, day)  # ValueError if invalid
 
-    def _serialize(self) -> Dict[str, str or int or float or bool or None
-                                 or Dict or List or Tuple or Set]:
+    def _serialize(self) -> Dict[str, Optional[str or int or float or bool
+                                 or Dict or List or Tuple or Set]]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object
@@ -66,8 +66,8 @@ class Date(Serializable):
         }
 
     @classmethod
-    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
-                                     or Dict or List or Tuple or Set]):
+    def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
+                                     or Dict or List or Tuple or Set]]):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize

@@ -18,7 +18,7 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from copy import deepcopy
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple, Set, Optional
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
@@ -37,8 +37,8 @@ class AnimeUserData(Serializable):
             score: Score,
             watching_status: WatchingStatus,
             episode_progress: int,
-            watching_start: Date or None,
-            watching_end: Date or None
+            watching_start:  Optional[Date],
+            watching_end: Optional[Date]
     ):
         """
         Initializes the AnimeUserData object
@@ -90,8 +90,8 @@ class AnimeUserData(Serializable):
         else:  # self.watching_status == WatchingStatus.PLANNING:
             return begin_none and complete_none and score_zero
 
-    def _serialize(self) -> Dict[str, str or int or float or bool or None
-                                 or Dict or List or Tuple or Set]:
+    def _serialize(self) -> Dict[str, Optional[str or int or float or bool
+                                 or Dict or List or Tuple or Set]]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object
@@ -112,8 +112,8 @@ class AnimeUserData(Serializable):
         return serialized
 
     @classmethod
-    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
-                                     or Dict or List or Tuple or Set]):
+    def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
+                                     or Dict or List or Tuple or Set]]):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize

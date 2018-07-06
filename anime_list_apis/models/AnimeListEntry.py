@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple, Set, Optional
 from anime_list_apis.models.AnimeData import AnimeData
 from anime_list_apis.models.AnimeUserData import AnimeUserData
 from anime_list_apis.models.Serializable import Serializable
@@ -127,8 +127,8 @@ class AnimeListEntry(Serializable):
             return begin_none and complete_none and score_zero \
                    and not watching_complete and not started_watching
 
-    def _serialize(self) -> Dict[str, str or int or float or bool or None
-                                 or Dict or List or Tuple or Set]:
+    def _serialize(self) -> Dict[str, Optional[str or int or float or bool
+                                 or Dict or List or Tuple or Set]]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object
@@ -139,8 +139,8 @@ class AnimeListEntry(Serializable):
         }
 
     @classmethod
-    def _deserialize(cls, data: Dict[str, str or int or float or bool or None
-                                     or Dict or List or Tuple or Set]):
+    def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
+                                     or Dict or List or Tuple or Set]]):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize

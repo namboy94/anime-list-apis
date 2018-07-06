@@ -19,7 +19,7 @@ LICENSE"""
 
 import json
 from unittest import TestCase
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Optional
 from anime_list_apis.models.AnimeListEntry import AnimeListEntry
 from anime_list_apis.models.attributes.AiringStatus import AiringStatus
 from anime_list_apis.models.attributes.Date import Date
@@ -51,8 +51,8 @@ class TestAnimeListEntry(TestCase):
 
     @staticmethod
     def generate_sample_serialized_entry() \
-            -> Dict[str, str or int or float or bool or None
-                    or Dict or List or Tuple or Set]:
+            -> Dict[str, Optional[str or int or float or bool
+                    or Dict or List or Tuple or Set]]:
         """
         Generates a sample deserialized version of the sample entry
         :return: The deserialized sample entry

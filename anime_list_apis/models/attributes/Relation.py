@@ -37,6 +37,7 @@ class RelationType(Enum):
     SPIN_OFF = 201
     OTHER = 202
     ADAPTATION = 203
+    ALTERNATIVE = 204
 
 
 class Relation(Serializable):

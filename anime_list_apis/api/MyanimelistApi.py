@@ -21,7 +21,7 @@ from typing import List, Optional
 from anime_list_apis.api.ApiInterface import ApiInterface
 from anime_list_apis.models.AnimeData import AnimeData
 from anime_list_apis.models.AnimeListEntry import AnimeListEntry
-from anime_list_apis.models.attributes.Id import Id
+from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
 
 
@@ -30,7 +30,12 @@ class MyanimelistApi(ApiInterface):
     Implements a wrapper around the myanimelist.net API
     """
 
-    def get_data(
+    id_type = IdType.MYANIMELIST
+    """
+    The ID type of the API interface
+    """
+
+    def _get_data(
             self,
             media_type: MediaType,
             _id: int or Id

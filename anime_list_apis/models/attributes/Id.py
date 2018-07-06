@@ -65,6 +65,7 @@ class Id(Serializable):
         :param id_type: The ID type to get
         :return: The ID. If it does not exist, return None
         """
+        self.ensure_type(id_type, IdType)
         return self.__ids[id_type]
 
     def set(self, _id: int, id_type: IdType):

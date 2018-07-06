@@ -20,7 +20,7 @@ LICENSE"""
 import time
 import json
 import requests
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Any
 from anime_list_apis.api.ApiInterface import ApiInterface
 from anime_list_apis.models.AnimeData import AnimeData
 from anime_list_apis.models.AnimeListEntry import AnimeListEntry
@@ -38,6 +38,11 @@ from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
 class AnilistApi(ApiInterface):
     """
     Implements a wrapper around the anilist.co API
+    """
+
+    id_type = IdType.ANILIST
+    """
+    The ID type of the API interface
     """
 
     media_query = """
@@ -103,7 +108,7 @@ class AnilistApi(ApiInterface):
     The query for a media list entry
     """
 
-    def get_data(
+    def _get_data(
             self,
             media_type: MediaType,
             _id: int or Id
@@ -129,8 +134,12 @@ class AnilistApi(ApiInterface):
         """
 
         variables = {"id": query_id, "type": media_type.name}
-        data = self.__graphql_query(query, variables)["Media"]
-        return self.__generate_anime_data(data)
+        data = self.__graphql_query(query, variables)
+
+        if data is None:
+            return None
+        else:
+            return self.__generate_anime_data(data["Media"])
 
     def get_list_entry(
             self,
@@ -160,9 +169,14 @@ class AnilistApi(ApiInterface):
         """
         variables = {"id": query_id, "type": media_type.name}
         result = self.__graphql_query(query, variables)
-        anime_data = self.__generate_anime_data(result["MediaList"]["media"])
-        user_data = self.__generate_anime_user_data(result["MediaList"])
-        return AnimeListEntry(anime_data, user_data)
+
+        if result is None:
+            return None
+        else:
+            anime_data = \
+                self.__generate_anime_data(result["MediaList"]["media"])
+            user_data = self.__generate_anime_user_data(result["MediaList"])
+            return AnimeListEntry(anime_data, user_data)
 
     def get_list(self, media_type: MediaType, username: str) \
             -> List[AnimeListEntry]:  # TODO Manga
@@ -173,8 +187,30 @@ class AnilistApi(ApiInterface):
         :return: The list of List entries
         """
         query = """
-            query()
+            query($username: String, $type: MediaType) {
+                MediaListCollection (userName: $username, type: $type) {
+                    lists {
+                        entries {
+                            """ + self.media_list_entry_query + """
+                        }
+                    }
+                }
+            }
         """
+        variables = {"username": username, "type": media_type.name}
+        result = self.__graphql_query(query, variables)
+
+        if result is None:
+            return []
+        else:
+
+            entries = []
+            for collection in result["MediaListCollection"]["lists"]:
+                for entry in collection["entries"]:
+                    anime_data = self.__generate_anime_data(entry["media"])
+                    user_data = self.__generate_anime_user_data(entry)
+                    entries.append(AnimeListEntry(anime_data, user_data))
+            return entries
 
     def get_anilist_id_from_mal_id(self, mal_id: int) -> Optional[int]:
         """
@@ -197,7 +233,7 @@ class AnilistApi(ApiInterface):
         else:
             return result["Media"]["id"]
 
-    def __generate_anime_user_data(self, data: Dict[str, object or dict]):
+    def __generate_anime_user_data(self, data: Dict[str, Any]):
         """
         Generates an Anime User Data object from JSON data
         :param data: The data to parse as User Data
@@ -217,8 +253,7 @@ class AnilistApi(ApiInterface):
         )
 
     # noinspection PyTypeChecker
-    def __generate_anime_data(self, data: Dict[str, object or dict]) \
-            -> AnimeData:
+    def __generate_anime_data(self, data: Dict[str, Any]) -> AnimeData:
         """
         Generates an AnimeData object from a GraphQL result
         :param data: The data to convert into an AnimeData object
@@ -260,8 +295,8 @@ class AnilistApi(ApiInterface):
         )
 
     @staticmethod
-    def __graphql_query(query: str, variables: Dict[str, object]) \
-            -> Optional[Dict[str, object]]:
+    def __graphql_query(query: str, variables: Dict[str, Any]) \
+            -> Optional[Dict[str, Any]]:
         """
         Executes a GraphQL query on the anilist API
         :param query: The query string
@@ -273,10 +308,12 @@ class AnilistApi(ApiInterface):
             url, json={'query': query, 'variables': variables}
         )
         time.sleep(0.5)  # For rate limiting
-        try:
-            return json.loads(response.text)["data"]
-        except KeyError:
+        result = json.loads(response.text)
+
+        if "errors" in result:
             return None
+        else:
+            return result["data"]
 
     @staticmethod
     def __resolve_date(date_data: Dict[str, int]) -> Optional[Date]:
@@ -293,7 +330,7 @@ class AnilistApi(ApiInterface):
             )
         except (ValueError, TypeError):
             return None
-        
+
     def __resolve_query_id(self, _id: int or Id, allow_mal: bool) \
             -> Optional[Tuple[int, IdType]]:
         """

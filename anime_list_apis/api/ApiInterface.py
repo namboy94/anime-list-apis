@@ -21,7 +21,7 @@ from typing import List, Optional
 from anime_list_apis.cache.Cacher import Cacher
 from anime_list_apis.models.AnimeData import AnimeData
 from anime_list_apis.models.AnimeListEntry import AnimeListEntry
-from anime_list_apis.models.attributes.Id import Id
+from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
 
 
@@ -29,7 +29,11 @@ class ApiInterface:
     """
     Defines methods that every API connector should implement
     """
-    pass
+
+    id_type = None  # type: IdType
+    """
+    The ID type of the API interface
+    """
 
     def __init__(self, cache: Cacher = None):
         """
@@ -46,6 +50,29 @@ class ApiInterface:
     ) -> Optional[AnimeData]:  # TODO Manga
         """
         Retrieves a single data object using the API
+        Tries to get the cached value first, then checks Anilist
+        :param media_type: The media type to retrieve
+        :param _id: The ID to retrieve. May be either an int or an Id object
+        :return: The Anime Data or None if no valid data was found
+        """
+        cached = self.cache.get(media_type, IdType.ANILIST, _id)
+
+        if cached is None:
+            cached = self._get_data(media_type, _id)
+
+            if cached is not None:
+                self.cache.add(media_type, self.id_type, cached)
+
+        return cached
+
+    def _get_data(
+            self,
+            media_type: MediaType,
+            _id: int or Id
+    ) -> Optional[AnimeData]:  # TODO Manga
+        """
+        Retrieves a single data object using the API
+        Actual implementation should be done by subclasses
         :param media_type: The media type to retrieve
         :param _id: The ID to retrieve. May be either an int or an Id object
         :return: The Anime Data or None if no valid data was found

@@ -108,8 +108,6 @@ class AnimeListEntry(Serializable):
             WatchingStatus.DROPPED
         ]
 
-        print(self.watching_status)
-
         if not self.get_user_data().is_valid_entry():
             return False
 

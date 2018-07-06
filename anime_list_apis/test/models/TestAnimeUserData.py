@@ -59,8 +59,8 @@ class TestAnimeUserData(TestCase):
             "score": Score(55, ScoreType.PERCENTAGE).serialize(),
             "watching_status": "COMPLETED",
             "episode_progress": 12,
-            "begin_date": Date(2018, 1, 1).serialize(),
-            "complete_date": Date(2018, 4, 4).serialize()
+            "watching_start": Date(2018, 1, 1).serialize(),
+            "watching_end": Date(2018, 4, 4).serialize()
         }
 
     def test_generating_user_entry_data(self):
@@ -73,8 +73,8 @@ class TestAnimeUserData(TestCase):
         self.assertEqual(data.score, Score(55, ScoreType.PERCENTAGE))
         self.assertEqual(data.watching_status, WatchingStatus.COMPLETED)
         self.assertEqual(data.episode_progress, 12)
-        self.assertEqual(data.begin_date, Date(2018, 1, 1))
-        self.assertEqual(data.complete_date, Date(2018, 4, 4))
+        self.assertEqual(data.watching_start, Date(2018, 1, 1))
+        self.assertEqual(data.watching_end, Date(2018, 4, 4))
 
     def test_valid(self):
         """
@@ -84,13 +84,13 @@ class TestAnimeUserData(TestCase):
         entry = self.generate_sample_user_data()
         self.assertTrue(entry.is_valid_entry())
 
-        entry.complete_date = None
+        entry.watching_end = None
         self.assertFalse(entry.is_valid_entry())
 
         entry.watching_status = WatchingStatus.WATCHING
         self.assertTrue(entry.is_valid_entry())
 
-        entry.begin_date = None
+        entry.watching_start = None
         self.assertFalse(entry.is_valid_entry())
 
         entry.watching_status = WatchingStatus.PLANNING
@@ -106,7 +106,7 @@ class TestAnimeUserData(TestCase):
         entry.watching_status = WatchingStatus.WATCHING
         self.assertFalse(entry.is_valid_entry())
 
-        entry.complete_date = None
+        entry.watching_end = None
         self.assertTrue(entry.is_valid_entry())
 
     def test_none_parameters(self):
@@ -116,7 +116,7 @@ class TestAnimeUserData(TestCase):
         """
 
         data = self.generate_sample_serialized_user_data()
-        allowed = ["begin_date", "complete_date"]
+        allowed = ["watching_start", "watching_end"]
 
         for parameter in allowed:
             copy = data.copy()
@@ -194,7 +194,7 @@ class TestAnimeUserData(TestCase):
         self.assertNotEqual(one, two)
         two = self.generate_sample_user_data()
 
-        two.begin_date = None
+        two.watching_start = None
         self.assertNotEqual(one, two)
 
     def test_string_representation(self):

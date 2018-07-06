@@ -74,8 +74,8 @@ class TestAnimeData(TestCase):
                 ).serialize()
             ],
             "airing_status": AiringStatus.FINISHED.name,
-            "start_date": Date(2018, 1, 1).serialize(),
-            "end_date": Date(2018, 4, 4).serialize(),
+            "airing_start": Date(2018, 1, 1).serialize(),
+            "airing_end": Date(2018, 4, 4).serialize(),
             "episode_count": 12,
             "episode_duration": 25,
             "cover_url": "https://example.com/image.png"
@@ -98,8 +98,8 @@ class TestAnimeData(TestCase):
             )]
         )
         self.assertEqual(data.airing_status, AiringStatus.FINISHED)
-        self.assertEqual(data.start_date, Date(2018, 1, 1))
-        self.assertEqual(data.end_date, Date(2018, 4, 4))
+        self.assertEqual(data.airing_start, Date(2018, 1, 1))
+        self.assertEqual(data.airing_end, Date(2018, 4, 4))
         self.assertEqual(data.episode_count, 12)
         self.assertEqual(data.episode_duration, 25)
         self.assertEqual(data.cover_url, "https://example.com/image.png")
@@ -110,9 +110,9 @@ class TestAnimeData(TestCase):
         :return: None
         """
         serialized = self.generate_sample_serialized_anime_data()
-        serialized["end_date"] = None
+        serialized["airing_end"] = None
         data = AnimeData.deserialize(serialized)
-        self.assertEqual(data.end_date, None)
+        self.assertEqual(data.airing_end, None)
 
     def test_serialization(self):
         """
@@ -175,7 +175,7 @@ class TestAnimeData(TestCase):
         self.assertNotEqual(one, two)
         two = self.generate_sample_anime_data()
 
-        two.start_date = None
+        two.airing_start = None
         self.assertNotEqual(one, two)
 
     def test_string_representation(self):

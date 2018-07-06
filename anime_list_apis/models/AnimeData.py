@@ -37,8 +37,8 @@ class AnimeData(Serializable):
             title: Title,
             relations: List[Relation],
             airing_status: AiringStatus,
-            start_date: Date or None,
-            end_date: Date or None,
+            airing_start: Date or None,
+            airing_end: Date or None,
             episode_count: int or None,
             episode_duration: int or None,
             cover_url: str or None
@@ -51,8 +51,8 @@ class AnimeData(Serializable):
         :param title: The title of the anime
         :param relations: The relations of the anime
         :param airing_status: The airing status of the anime
-        :param start_date: The day the anime started airing
-        :param end_date: The day the last episode aired
+        :param airing_start: The day the anime started airing
+        :param airing_end: The day the last episode aired
         :param episode_count: The amount of episodes of the anime
         :param episode_duration: The duration of the episodes in minutes
         :param cover_url: An URL pointing to a cover image for the anime
@@ -63,8 +63,8 @@ class AnimeData(Serializable):
         self.ensure_type(relations, list)
         list(map(lambda x: self.ensure_type(x, Relation), relations))
         self.ensure_type(airing_status, AiringStatus)
-        self.ensure_type(start_date, Date, True)
-        self.ensure_type(end_date, Date, True)
+        self.ensure_type(airing_start, Date, True)
+        self.ensure_type(airing_end, Date, True)
         self.ensure_type(episode_count, int, True)
         self.ensure_type(episode_duration, int, True)
         self.ensure_type(cover_url, str, True)
@@ -72,8 +72,8 @@ class AnimeData(Serializable):
         self.title = title
         self.relations = relations
         self.airing_status = airing_status
-        self.start_date = start_date  # type: Date
-        self.end_date = end_date  # type: Date
+        self.airing_start = airing_start  # type: Date
+        self.airing_end = airing_end  # type: Date
         self.episode_count = episode_count  # type: int
         self.episode_duration = episode_duration  # type: int
         self.cover_url = cover_url  # type: str
@@ -89,8 +89,8 @@ class AnimeData(Serializable):
             "title": self.title.serialize(),
             "relations": list(map(lambda x: x.serialize(), self.relations)),
             "airing_status": self.airing_status.name,
-            "start_date": self.__get_serialized(self.start_date),
-            "end_date": self.__get_serialized(self.end_date),
+            "airing_start": self.__get_serialized(self.airing_start),
+            "airing_end": self.__get_serialized(self.airing_end),
             "episode_count": self.episode_count,
             "episode_duration": self.episode_duration,
             "cover_url": self.cover_url
@@ -129,14 +129,14 @@ class AnimeData(Serializable):
             data["relations"]
         ))
         data["airing_status"] = AiringStatus[data["airing_status"]]
-        for date in ["start_date", "end_date"]:
+        for date in ["airing_start", "airing_end"]:
             date_data = data[date]
             if date_data is not None:
                 data[date] = Date.deserialize(date_data)
 
         order = [
-            "id", "title", "relations", "airing_status", "start_date",
-            "end_date", "episode_count", "episode_duration", "cover_url"
+            "id", "title", "relations", "airing_status", "airing_start",
+            "airing_end", "episode_count", "episode_duration", "cover_url"
         ]
         params = tuple(map(lambda x: data[x], order))
         return cls(*params)  # type: AnimeData

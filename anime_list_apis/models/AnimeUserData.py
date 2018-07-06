@@ -35,8 +35,8 @@ class AnimeUserData(Serializable):
             score: Score,
             watching_status: WatchingStatus,
             episode_progress: int,
-            begin_date: Date or None,
-            complete_date: Date or None
+            watching_start: Date or None,
+            watching_end: Date or None
     ):
         """
         Initializes the AnimeUserData object
@@ -44,23 +44,23 @@ class AnimeUserData(Serializable):
         :param score: The user's score for this anime
         :param watching_status: The user's current watching status
         :param episode_progress: The user's progress
-        :param begin_date: The date on which the user started watching
-        :param complete_date: The date on which the user completed the show
+        :param watching_start: The date on which the user started watching
+        :param watching_end: The date on which the user completed the show
         :raises TypeError: If any of the parameters has a wrong type
         """
         self.ensure_type(username, str)
         self.ensure_type(score, Score)
         self.ensure_type(watching_status, WatchingStatus)
         self.ensure_type(episode_progress, int)
-        self.ensure_type(begin_date, Date, True)
-        self.ensure_type(complete_date, Date, True)
+        self.ensure_type(watching_start, Date, True)
+        self.ensure_type(watching_end, Date, True)
 
         self.username = username
         self.score = score
         self.watching_status = watching_status
         self.episode_progress = episode_progress
-        self.begin_date = begin_date  # type: Date
-        self.complete_date = complete_date  # type: Date
+        self.watching_start = watching_start  # type: Date
+        self.watching_end = watching_end  # type: Date
 
     def is_valid_entry(self) -> bool:
         """
@@ -68,8 +68,8 @@ class AnimeUserData(Serializable):
         :return: True, if all required attributes are valid and present
         """
         score_zero = self.score.get(ScoreType.PERCENTAGE) == 0
-        begin_none = self.begin_date is None
-        complete_none = self.complete_date is None
+        begin_none = self.watching_start is None
+        complete_none = self.watching_end is None
 
         if self.watching_status in [
             WatchingStatus.COMPLETED, WatchingStatus.REWATCHING
@@ -97,11 +97,11 @@ class AnimeUserData(Serializable):
             "score": self.score.serialize(),
             "watching_status": self.watching_status.name,
             "episode_progress": self.episode_progress,
-            "begin_date": self.begin_date,
-            "complete_date": self.complete_date
+            "watching_start": self.watching_start,
+            "watching_end": self.watching_end
         }
 
-        for date in ["begin_date", "complete_date"]:
+        for date in ["watching_start", "watching_end"]:
             if serialized[date] is not None:
                 serialized[date] = serialized[date].serialize()
 
@@ -117,7 +117,7 @@ class AnimeUserData(Serializable):
         :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
-        for date in ["begin_date", "complete_date"]:
+        for date in ["watching_start", "watching_end"]:
             if data[date] is not None:
                 data[date] = Date.deserialize(data[date])
 
@@ -126,7 +126,7 @@ class AnimeUserData(Serializable):
             Score.deserialize(data["score"]),
             WatchingStatus[data["watching_status"]],
             data["episode_progress"],
-            data["begin_date"],
-            data["complete_date"]
+            data["watching_start"],
+            data["watching_end"]
         )  # type: AnimeUserData
         return generated

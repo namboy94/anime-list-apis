@@ -17,17 +17,90 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-from typing import List
+import time
+import json
+import requests
+from typing import List, Dict, Tuple, Optional
 from anime_list_apis.api.ApiInterface import ApiInterface
 from anime_list_apis.models.AnimeData import AnimeData
 from anime_list_apis.models.AnimeListEntry import AnimeListEntry
-from anime_list_apis.models.attributes.Id import Id
+from anime_list_apis.models.AnimeUserData import AnimeUserData
+from anime_list_apis.models.attributes.AiringStatus import AiringStatus
+from anime_list_apis.models.attributes.Date import Date
+from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
+from anime_list_apis.models.attributes.Relation import Relation, RelationType
+from anime_list_apis.models.attributes.Score import Score, ScoreType
+from anime_list_apis.models.attributes.Title import Title, TitleType
+from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
 
 
 class AnilistApi(ApiInterface):
     """
     Implements a wrapper around the anilist.co API
+    """
+
+    media_query = """
+        id
+        idMal
+        title {
+            romaji
+            english
+            native
+        }
+        status
+        episodes
+        duration
+        coverImage {
+            large
+        }
+        startDate {
+            year
+            month
+            day
+        }
+        endDate {
+            year
+            month
+            day
+        }
+        relations {
+            edges {
+                node {
+                    id
+                    idMal
+                }
+                relationType
+            }
+        }
+    """
+    """
+    The GraphQL query for a Media object
+    """
+
+    media_list_entry_query = """
+        user {
+            name
+        }
+        score(format: POINT_100)
+        status
+        progress
+        startedAt {
+            year
+            month
+            day
+        }
+        completedAt {
+            year
+            month
+            day
+        }
+        media {
+        """ + media_query + """
+        }
+    """
+    """
+    The query for a media list entry
     """
 
     def get_data(
@@ -41,14 +114,30 @@ class AnilistApi(ApiInterface):
         :param _id: The ID to retrieve. May be either an int or an Id object
         :return: The Anime Data or None if no valid data was found
         """
-        raise NotImplementedError()
+        id_tuple = self.__resolve_query_id(_id, True)
+        if id_tuple is None:
+            return None
+        query_id, id_type = id_tuple
+        query_id_type = "id" if id_type == IdType.ANILIST else "idMal"
+
+        query = """
+            query ($id: Int, $type: MediaType) {
+                Media(""" + query_id_type + """: $id, type: $type) {
+                    """ + self.media_query + """
+                }
+            }
+        """
+
+        variables = {"id": query_id, "type": media_type.name}
+        data = self.__graphql_query(query, variables)["Media"]
+        return self.__generate_anime_data(data)
 
     def get_list_entry(
             self,
             media_type: MediaType,
             _id: int or Id,
             username: str
-    ) -> AnimeListEntry:  # TODO Manga
+    ) -> Optional[AnimeListEntry]:  # TODO Manga
         """
         Retrieves a user list entry
         :param media_type: The media type to fetch
@@ -57,7 +146,23 @@ class AnilistApi(ApiInterface):
         :return: The entry for the user or
                  None if the user doesn't have such an entry
         """
-        raise NotImplementedError()
+        id_tuple = self.__resolve_query_id(_id, False)
+        if id_tuple is None:
+            return None
+        query_id = id_tuple[0]
+
+        query = """
+            query ($id: Int, $username: String, $type: MediaType) {
+                MediaList(mediaId: $id, userName: $username, type: $type) {
+                    """ + self.media_list_entry_query + """
+                }
+            }
+        """
+        variables = {"id": query_id, "type": media_type.name}
+        result = self.__graphql_query(query, variables)
+        anime_data = self.__generate_anime_data(result["MediaList"]["media"])
+        user_data = self.__generate_anime_user_data(result["MediaList"])
+        return AnimeListEntry(anime_data, user_data)
 
     def get_list(self, media_type: MediaType, username: str) \
             -> List[AnimeListEntry]:  # TODO Manga
@@ -67,4 +172,158 @@ class AnilistApi(ApiInterface):
         :param username: The username for which to fetch the list
         :return: The list of List entries
         """
-        raise NotImplementedError()
+        query = """
+            query()
+        """
+
+    def get_anilist_id_from_mal_id(self, mal_id: int) -> int or None:
+        """
+        Retrieves an anilist ID from a myanimelist ID
+        :param mal_id: The myanimelist ID
+        :return: The anilist ID. May be None if myanimelist ID has no
+                 equivalent on anilist
+        """
+        query = """
+            query ($mal_id: Int) {
+                Media(idMal: $mal_id) {
+                    id
+                }
+            }
+        """
+        variables = {"mal_id": mal_id}
+        result = self.__graphql_query(query, variables)
+        if result is None:
+            return None
+        else:
+            return result["Media"]["id"]
+
+    def __generate_anime_user_data(self, data: Dict[str, object or dict]):
+        """
+        Generates an Anime User Data object from JSON data
+        :param data: The data to parse as User Data
+        :return: The generated AnimeUserData object
+        """
+        watching_status = data["status"]
+        watching_status = watching_status.replace("CURRENT", "WATCHING")
+        watching_status = watching_status.replace("REPEATING", "REWATCHING")
+
+        return AnimeUserData(
+            data["user"]["name"],
+            Score(data["score"], ScoreType.PERCENTAGE),
+            WatchingStatus[watching_status],
+            data["progress"],
+            self.__resolve_date(data["startedAt"]),
+            self.__resolve_date(data["completedAt"])
+        )
+
+    # noinspection PyTypeChecker
+    def __generate_anime_data(self, data: Dict[str, object or dict]) \
+            -> AnimeData:
+        """
+        Generates an AnimeData object from a GraphQL result
+        :param data: The data to convert into an AnimeData object
+        :return: The generated AnimeData object
+        """
+        _id = Id({
+            IdType.ANILIST: data["id"],
+            IdType.MYANIMELIST: data["idMal"]
+        })
+        title = Title({
+            TitleType.ROMAJI: data["title"]["romaji"],
+            TitleType.ENGLISH: data["title"]["english"],
+            TitleType.JAPANESE: data["title"]["native"],
+        })
+        relations = []
+        for relation in data["relations"]["edges"]:
+            dest_id = Id({
+                IdType.ANILIST: relation["node"]["id"],
+                IdType.MYANIMELIST: relation["node"]["idMal"]
+            })
+            rel_type = RelationType[relation["relationType"]]
+            relations.append(Relation(_id, dest_id, rel_type))
+
+        airing_status = data["status"]
+        if airing_status == "NOT_YET_RELEASED":
+            airing_status = "NOT_RELEASED"
+        airing_status = AiringStatus[airing_status]
+
+        return AnimeData(
+            _id,
+            title,
+            relations,
+            airing_status,
+            self.__resolve_date(data["startDate"]),
+            self.__resolve_date(data["endDate"]),
+            data["episodes"],
+            data["duration"],
+            data["coverImage"]["large"]
+        )
+
+    @staticmethod
+    def __graphql_query(query: str, variables: Dict[str, object]) \
+            -> Dict[str, object] or None:
+        """
+        Executes a GraphQL query on the anilist API
+        :param query: The query string
+        :param variables: The variables to post
+        :return: The result of the query or None if an error occured
+        """
+        url = 'https://graphql.anilist.co'
+        response = requests.post(
+            url, json={'query': query, 'variables': variables}
+        )
+        time.sleep(0.5)  # For rate limiting
+        try:
+            return json.loads(response.text)["data"]
+        except KeyError:
+            return None
+
+    @staticmethod
+    def __resolve_date(date_data: Dict[str, int]) -> Date or None:
+        """
+        Resolves a date dictionary into either a Date object or None
+        :param date_data: The date data to use
+        :return: The generated Date object or None if invalid date
+        """
+        try:
+            return Date(
+                date_data["year"],
+                date_data["month"],
+                date_data["day"]
+            )
+        except (ValueError, TypeError):
+            return None
+        
+    def __resolve_query_id(self, _id: int or Id, allow_mal: bool) \
+            -> Tuple[int, IdType] or None:
+        """
+        Calculates the ID value to use in a query
+        :param _id: The ID, which may be an Id object or an int value
+        :param allow_mal: If True, may return a Myanimelist ID.
+                          This will be signified by the second return value
+                          being IdType.MYANIMELIST
+        :return: A tuple consisting of the ID and the IDs type
+        """
+        if not isinstance(_id, int):
+            mal_id = _id.get(IdType.MYANIMELIST)
+            anilist_id = _id.get(IdType.ANILIST)
+        else:
+            mal_id = None
+            anilist_id = _id
+
+        id_type = IdType.ANILIST
+        if anilist_id is None:
+            query_id = mal_id
+
+            if allow_mal:
+                id_type = IdType.MYANIMELIST
+            else:
+                query_id = self.get_anilist_id_from_mal_id(query_id)
+
+        else:
+            query_id = anilist_id
+
+        if query_id is None:
+            return None
+        else:
+            return query_id, id_type

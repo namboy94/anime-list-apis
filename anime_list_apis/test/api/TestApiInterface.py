@@ -21,6 +21,7 @@ import os
 import shutil
 from unittest import TestCase, mock
 
+from anime_list_apis.api.AnilistApi import AnilistApi
 from anime_list_apis.api.ApiInterface import ApiInterface
 from anime_list_apis.cache.Cacher import Cacher
 from anime_list_apis.models.attributes.Id import Id, IdType
@@ -32,17 +33,17 @@ class TestApiInterface(TestCase):
     Testing Framework for API Interfaces
     """
 
-    api_class = ApiInterface
+    api_class = AnilistApi
     """
     The API class to test
     """
 
-    primary_id_type = IdType.MYANIMELIST
+    primary_id_type = IdType.ANILIST
     """
     The primary ID type
     """
 
-    valid_id_types = []
+    valid_id_types = [IdType.ANILIST, IdType.MYANIMELIST]
     """
     A list of valid ID types
     """

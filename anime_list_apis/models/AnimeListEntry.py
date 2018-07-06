@@ -22,6 +22,7 @@ from anime_list_apis.models.AnimeData import AnimeData
 from anime_list_apis.models.AnimeUserData import AnimeUserData
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.AiringStatus import AiringStatus
+from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import ScoreType
 from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
 
@@ -39,6 +40,8 @@ class AnimeListEntry(Serializable):
         """
         self.ensure_type(anime_data, AnimeData)
         self.ensure_type(user_data, AnimeUserData)
+
+        self.media_type = MediaType.ANIME
 
         self.id = anime_data.id
         self.title = anime_data.title

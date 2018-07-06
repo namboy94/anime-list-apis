@@ -23,6 +23,7 @@ from unittest import TestCase
 from typing import Dict, Tuple, Set, List
 from anime_list_apis.models.AnimeUserData import AnimeUserData
 from anime_list_apis.models.attributes.Date import Date
+from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
 
@@ -76,6 +77,7 @@ class TestAnimeUserData(TestCase):
         self.assertEqual(data.episode_progress, 12)
         self.assertEqual(data.watching_start, Date(2018, 1, 1))
         self.assertEqual(data.watching_end, Date(2018, 4, 4))
+        self.assertEqual(data.media_type, MediaType.ANIME)
 
     def test_valid(self):
         """

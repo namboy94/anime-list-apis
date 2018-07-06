@@ -22,6 +22,7 @@ from typing import Dict, List, Tuple, Set
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id
+from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Title import Title
 from anime_list_apis.models.attributes.Relation import Relation
 from anime_list_apis.models.attributes.AiringStatus import AiringStatus
@@ -69,6 +70,8 @@ class AnimeData(Serializable):
         self.ensure_type(episode_count, int, True)
         self.ensure_type(episode_duration, int, True)
         self.ensure_type(cover_url, str, True)
+
+        self.media_type = MediaType.ANIME
         self.id = _id
         self.title = title
         self.relations = relations

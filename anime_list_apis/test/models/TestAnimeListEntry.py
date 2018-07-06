@@ -24,6 +24,7 @@ from anime_list_apis.models.AnimeListEntry import AnimeListEntry
 from anime_list_apis.models.attributes.AiringStatus import AiringStatus
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id, IdType
+from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.Title import Title, TitleType
@@ -91,6 +92,7 @@ class TestAnimeListEntry(TestCase):
         self.assertEqual(data.episode_progress, 12)
         self.assertEqual(data.watching_start, Date(2018, 1, 1))
         self.assertEqual(data.watching_end, Date(2018, 4, 4))
+        self.assertEqual(data.media_type, MediaType.ANIME)
 
     def test_internal_getters(self):
         """

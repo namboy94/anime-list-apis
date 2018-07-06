@@ -21,6 +21,8 @@ import json
 from copy import deepcopy
 from unittest import TestCase
 from typing import Dict, List, Set, Tuple
+
+from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.AiringStatus import AiringStatus
 from anime_list_apis.models.AnimeData import AnimeData
@@ -104,6 +106,7 @@ class TestAnimeData(TestCase):
         self.assertEqual(data.episode_count, 12)
         self.assertEqual(data.episode_duration, 25)
         self.assertEqual(data.cover_url, "https://example.com/image.png")
+        self.assertEqual(data.media_type, MediaType.ANIME)
 
     def test_generating_with_none_value(self):
         """

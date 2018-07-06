@@ -20,6 +20,7 @@ LICENSE"""
 from copy import deepcopy
 from typing import Dict, List, Tuple, Set
 from anime_list_apis.models.Serializable import Serializable
+from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
@@ -55,6 +56,8 @@ class AnimeUserData(Serializable):
         self.ensure_type(episode_progress, int)
         self.ensure_type(watching_start, Date, True)
         self.ensure_type(watching_end, Date, True)
+
+        self.media_type = MediaType.ANIME
 
         self.username = username
         self.score = score

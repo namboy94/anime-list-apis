@@ -17,11 +17,54 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
+from typing import List
 from anime_list_apis.api.ApiInterface import ApiInterface
+from anime_list_apis.models.AnimeData import AnimeData
+from anime_list_apis.models.AnimeListEntry import AnimeListEntry
+from anime_list_apis.models.attributes.Id import Id
+from anime_list_apis.models.attributes.MediaType import MediaType
 
 
 class AnilistApi(ApiInterface):
     """
     Implements a wrapper around the anilist.co API
     """
-    pass
+
+    def get_data(
+            self,
+            media_type: MediaType,
+            _id: int or Id
+    ) -> AnimeData or None:  # TODO Manga
+        """
+        Retrieves a single data object using the API
+        :param media_type: The media type to retrieve
+        :param _id: The ID to retrieve. May be either an int or an Id object
+        :return: The Anime Data or None if no valid data was found
+        """
+        raise NotImplementedError()
+
+    def get_list_entry(
+            self,
+            media_type: MediaType,
+            _id: int or Id,
+            username: str
+    ) -> AnimeListEntry:  # TODO Manga
+        """
+        Retrieves a user list entry
+        :param media_type: The media type to fetch
+        :param _id: The ID to retrieve. May be and int or an Id object
+        :param username: The user for which to fetch the entry
+        :return: The entry for the user or
+                 None if the user doesn't have such an entry
+        """
+        raise NotImplementedError()
+
+    def get_list(self, media_type: MediaType, username: str) \
+            -> List[AnimeListEntry]:  # TODO Manga
+        """
+        Retrieves a user's entire list
+        :param media_type: The media type to fetch
+        :param username: The username for which to fetch the list
+        :return: The list of List entries
+        """
+        raise NotImplementedError()

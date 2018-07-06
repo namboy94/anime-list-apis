@@ -18,6 +18,7 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 import json
+from copy import deepcopy
 from unittest import TestCase
 from typing import Dict, List, Set, Tuple
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
@@ -129,11 +130,14 @@ class TestAnimeData(TestCase):
         Tests deserializing an AnimeData object
         :return: None
         """
+        serialized = self.generate_sample_serialized_anime_data()
         self.assertEqual(
-            AnimeData.deserialize(
-                self.generate_sample_serialized_anime_data()
-            ),
+            AnimeData.deserialize(serialized),
             self.generate_sample_anime_data()
+        )
+        self.assertEqual(
+            serialized,
+            self.generate_sample_serialized_anime_data()
         )
 
     def test_invalid_deserialization(self):
@@ -153,11 +157,11 @@ class TestAnimeData(TestCase):
 
             for faux_value in [2000, "Hello", Id({IdType.KITSU: 1})]:
                 if type(faux_value) != type(value):
-                    copy = sample.copy()
+                    copy = deepcopy(sample)
                     copy[key] = faux_value
                     attempt_deserialize(copy)
 
-            copy = sample.copy()
+            copy = deepcopy(sample)
             copy.pop(key)
             attempt_deserialize(copy)
 

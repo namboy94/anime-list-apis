@@ -18,6 +18,7 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 import json
+from copy import deepcopy
 from unittest import TestCase
 from typing import Dict, Tuple, Set, List
 from anime_list_apis.models.AnimeUserData import AnimeUserData
@@ -119,13 +120,13 @@ class TestAnimeUserData(TestCase):
         allowed = ["watching_start", "watching_end"]
 
         for parameter in allowed:
-            copy = data.copy()
+            copy = deepcopy(data)
             copy[parameter] = None
             entry = AnimeUserData.deserialize(copy)
             self.assertEqual(entry.serialize()[parameter], None)
 
         for parameter in list(filter(lambda x: x not in allowed, data.keys())):
-            copy = data.copy()
+            copy = deepcopy(data)
             copy[parameter] = None
             try:
                 AnimeUserData.deserialize(copy)
@@ -148,11 +149,14 @@ class TestAnimeUserData(TestCase):
         Tests deserializing a AnimeUserData object
         :return: None
         """
+        serialized = self.generate_sample_serialized_user_data()
         self.assertEqual(
-            AnimeUserData.deserialize(
-                self.generate_sample_serialized_user_data()
-            ),
+            AnimeUserData.deserialize(serialized),
             self.generate_sample_user_data()
+        )
+        self.assertEqual(
+            serialized,
+            self.generate_sample_serialized_user_data()
         )
 
     def test_invalid_deserialization(self):
@@ -172,11 +176,11 @@ class TestAnimeUserData(TestCase):
 
             for faux_value in [2000, "Hello"]:
                 if type(faux_value) != type(value):
-                    copy = sample.copy()
+                    copy = deepcopy(sample)
                     copy[key] = faux_value
                     attempt_deserialize(copy)
 
-            copy = sample.copy()
+            copy = deepcopy(sample)
             copy.pop(key)
             attempt_deserialize(copy)
 

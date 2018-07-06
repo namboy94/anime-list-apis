@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
+from copy import deepcopy
 from typing import Dict, List, Tuple, Set
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.Date import Date
@@ -121,6 +122,7 @@ class AnimeData(Serializable):
         :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
+        data = deepcopy(data)
         # Deserialize sub-parts
         data["id"] = Id.deserialize(data["id"])
         data["title"] = Title.deserialize(data["title"])

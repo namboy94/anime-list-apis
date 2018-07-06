@@ -92,6 +92,22 @@ class TestAnimeListEntry(TestCase):
         self.assertEqual(data.watching_start, Date(2018, 1, 1))
         self.assertEqual(data.watching_end, Date(2018, 4, 4))
 
+    def test_internal_getters(self):
+        """
+        Tests the two generating getter methods that generate
+        AnimeData and AnimeUserData objects
+        :return: None
+        """
+        entry = self.generate_sample_entry()
+        self.assertEqual(
+            entry.get_anime_data(),
+            TestAnimeData.generate_sample_anime_data()
+        )
+        self.assertEqual(
+            entry.get_user_data(),
+            TestAnimeUserData.generate_sample_user_data()
+        )
+
     def test_if_valid(self):
         """
         Tests the functionality of the is_valid_entry method
@@ -102,27 +118,38 @@ class TestAnimeListEntry(TestCase):
 
         for config in [
             [
-                ("airing_status", AiringStatus.RELEASING.name),
-                ("watching_status", WatchingStatus.WATCHING.name),
-                ("score", Score(0, ScoreType.PERCENTAGE).serialize()),
-                ("watching_end", None)
+                ("anime", "airing_status", AiringStatus.RELEASING.name),
+                ("user", "watching_status", WatchingStatus.WATCHING.name),
+                ("user", "score", Score(0, ScoreType.PERCENTAGE).serialize()),
+                ("user", "watching_end", None)
             ],
             [
-                ("watching_status", WatchingStatus.PLANNING),
-                ("score", Score(0, ScoreType.PERCENTAGE).serialize()),
-                ("watching_start", None),
-                ("watching_end", None)
+                ("user", "watching_status", WatchingStatus.PLANNING.name),
+                ("user", "score", Score(0, ScoreType.PERCENTAGE).serialize()),
+                ("user", "watching_start", None),
+                ("user", "watching_end", None)
             ],
             [
-                ("score", Score(0, ScoreType.PERCENTAGE).serialize()),
-                ("score", Score(70, ScoreType.PERCENTAGE).serialize()),
+                ("user", "score", Score(0, ScoreType.PERCENTAGE).serialize()),
+                ("user", "score", Score(70, ScoreType.PERCENTAGE).serialize()),
+            ],
+            [
+                ("anime", "airing_status", AiringStatus.NOT_RELEASED.name),
+                ("user", "score", Score(0, ScoreType.PERCENTAGE).serialize()),
+                ("user", "watching_start", None),
+                ("user", "watching_end", None),
+                ("user", "watching_status", WatchingStatus.WATCHING.name),
+                ("user", "watching_status", WatchingStatus.PAUSED.name),
+                ("user", "watching_status", WatchingStatus.DROPPED.name),
+                ("user", "watching_status", WatchingStatus.PLANNING.name)
             ]
         ]:
+            serialized = self.generate_sample_serialized_entry()
             for i, conf in enumerate(config):
-                key, value = conf
-                serialized = self.generate_sample_serialized_entry()
-                serialized[key] = value
-                entry = self.generate_sample_entry()
+                master, key, value = conf
+
+                serialized[master + "_data"][key] = value
+                entry = AnimeListEntry.deserialize(serialized)
 
                 if i == len(config) - 1:
                     self.assertTrue(entry.is_valid_entry())
@@ -194,7 +221,7 @@ class TestAnimeListEntry(TestCase):
         self.assertNotEqual(one, two)
         two = self.generate_sample_entry()
 
-        two.watching = None
+        two.watching_end = None
         self.assertNotEqual(one, two)
 
     def test_string_representation(self):

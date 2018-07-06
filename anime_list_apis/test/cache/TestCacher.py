@@ -31,7 +31,7 @@ class TestCacher(TestCase):
     Tests the Cacher
     """
 
-    def setup(self):
+    def setUp(self):
         """
         Creates a cache
         :return: None
@@ -72,5 +72,31 @@ class TestCacher(TestCase):
             entry, self.cache.get(MediaType.ANIME, IdType.MYANIMELIST, _id)
         )
         self.assertEqual(
-            new_cache, self.cache.get(MediaType.ANIME, IdType.MYANIMELIST, _id)
+            entry, new_cache.get(MediaType.ANIME, IdType.MYANIMELIST, _id)
+        )
+
+    def test_retrieving_non_existant_entry(self):
+        """
+        Tests retrieving an entry from the cache that doesn't exist
+        :return: None
+        """
+        self.assertEqual(
+            self.cache.get(MediaType.ANIME, IdType.ANILIST, 1),
+            None
+        )
+
+    def test_using_int_instead_of_id_object(self):
+        """
+        Tests retrieving entries by using ints instead of Id objects
+        :return: None
+        """
+        entry = TestAnimeData.generate_sample_anime_data()
+        id_obj = entry.id
+        id_int = id_obj.get(IdType.MYANIMELIST)
+
+        self.cache.add(MediaType.ANIME, IdType.MYANIMELIST, entry)
+
+        self.assertEqual(
+            self.cache.get(MediaType.ANIME, IdType.MYANIMELIST, id_int),
+            self.cache.get(MediaType.ANIME, IdType.MYANIMELIST, id_obj)
         )

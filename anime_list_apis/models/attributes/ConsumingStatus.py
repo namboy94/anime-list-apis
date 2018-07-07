@@ -20,13 +20,13 @@ LICENSE"""
 from enum import Enum
 
 
-class WatchingStatus(Enum):
+class ConsumingStatus(Enum):
     """
-    Enum that specifies the watching state of a user's list entry
+    Enum that specifies the watching/reading state of a user's list entry
     """
-    WATCHING = 1
+    CURRENT = 1
     PLANNING = 2
     COMPLETED = 3
     DROPPED = 4
     PAUSED = 5
-    REWATCHING = 6
+    REPEATING = 6

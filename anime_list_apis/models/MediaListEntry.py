@@ -18,13 +18,13 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from typing import Dict, List, Tuple, Set, Optional
-from anime_list_apis.models.AnimeData import AnimeData
-from anime_list_apis.models.AnimeUserData import AnimeUserData
+from anime_list_apis.models.MediaData import AnimeData
+from anime_list_apis.models.MediaUserData import AnimeUserData
 from anime_list_apis.models.Serializable import Serializable
-from anime_list_apis.models.attributes.AiringStatus import AiringStatus
+from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import ScoreType
-from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
+from anime_list_apis.models.attributes.ConsumingStatus import ConsumingStatus
 
 
 class AnimeListEntry(Serializable):
@@ -46,19 +46,19 @@ class AnimeListEntry(Serializable):
         self.id = anime_data.id
         self.title = anime_data.title
         self.relations = anime_data.relations
-        self.airing_status = anime_data.airing_status
-        self.airing_start = anime_data.airing_start
-        self.airing_end = anime_data.airing_end
+        self.releasing_status = anime_data.releasing_status
+        self.releasing_start = anime_data.releasing_start
+        self.releasing_end = anime_data.releasing_end
         self.episode_count = anime_data.episode_count
         self.episode_duration = anime_data.episode_duration
         self.cover_url = anime_data.cover_url
 
         self.username = user_data.username
         self.score = user_data.score
-        self.watching_status = user_data.watching_status
+        self.consuming_status = user_data.consuming_status
         self.episode_progress = user_data.episode_progress
-        self.watching_start = user_data.watching_start
-        self.watching_end = user_data.watching_end
+        self.consuming_start = user_data.consuming_start
+        self.consuming_end = user_data.consuming_end
 
     def get_anime_data(self) -> AnimeData:
         """
@@ -70,9 +70,9 @@ class AnimeListEntry(Serializable):
             self.id,
             self.title,
             self.relations,
-            self.airing_status,
-            self.airing_start,
-            self.airing_end,
+            self.releasing_status,
+            self.releasing_start,
+            self.releasing_end,
             self.episode_count,
             self.episode_duration,
             self.cover_url
@@ -87,10 +87,10 @@ class AnimeListEntry(Serializable):
         return AnimeUserData(
             self.username,
             self.score,
-            self.watching_status,
+            self.consuming_status,
             self.episode_progress,
-            self.watching_start,
-            self.watching_end
+            self.consuming_start,
+            self.consuming_end
         )
 
     def is_valid_entry(self) -> bool:
@@ -99,31 +99,31 @@ class AnimeListEntry(Serializable):
         :return: True, if all required attributes are valid and present
         """
         score_zero = self.score.get(ScoreType.PERCENTAGE) == 0
-        begin_none = self.watching_start is None
-        complete_none = self.watching_end is None
-        watching_complete = self.watching_status == WatchingStatus.COMPLETED
-        started_watching = self.watching_status in [
-            WatchingStatus.WATCHING,
-            WatchingStatus.PAUSED,
-            WatchingStatus.DROPPED
+        begin_none = self.consuming_start is None
+        complete_none = self.consuming_end is None
+        consuming_complete = self.consuming_status == ConsumingStatus.COMPLETED
+        started_watching = self.consuming_status in [
+            ConsumingStatus.CURRENT,
+            ConsumingStatus.PAUSED,
+            ConsumingStatus.DROPPED
         ]
 
         if not self.get_user_data().is_valid_entry():
             return False
 
-        if self.airing_status in [
-            AiringStatus.FINISHED
+        if self.releasing_status in [
+            ReleasingStatus.FINISHED
         ]:
             return True
 
-        elif self.airing_status in [
-            AiringStatus.RELEASING, AiringStatus.CANCELLED,
+        elif self.releasing_status in [
+            ReleasingStatus.RELEASING, ReleasingStatus.CANCELLED,
         ]:
-            return complete_none and score_zero and not watching_complete
+            return complete_none and score_zero and not consuming_complete
 
         else:  # AiringStatus.NOT_RELEASESD
             return begin_none and complete_none and score_zero \
-                   and not watching_complete and not started_watching
+                   and not consuming_complete and not started_watching
 
     def _serialize(self) -> Dict[str, Optional[str or int or float or bool
                                  or Dict or List or Tuple or Set]]:

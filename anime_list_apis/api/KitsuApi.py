@@ -19,8 +19,8 @@ LICENSE"""
 
 from typing import List, Optional
 from anime_list_apis.api.ApiInterface import ApiInterface
-from anime_list_apis.models.AnimeData import AnimeData
-from anime_list_apis.models.AnimeListEntry import AnimeListEntry
+from anime_list_apis.models.MediaData import AnimeData
+from anime_list_apis.models.MediaListEntry import AnimeListEntry
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
 

@@ -23,7 +23,7 @@ from unittest import TestCase
 from anime_list_apis.cache.Cacher import Cacher
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Id import IdType
-from anime_list_apis.test.models.TestAnimeData import TestAnimeData
+from anime_list_apis.test.models.TestMediaData import TestAnimeData
 
 
 class TestCacher(TestCase):

@@ -20,7 +20,7 @@ LICENSE"""
 from enum import Enum
 
 
-class AiringStatus(Enum):
+class ReleasingStatus(Enum):
     """
     Enumeration that models the airing state of a media entry
     """

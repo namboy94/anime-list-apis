@@ -22,17 +22,17 @@ import json
 import requests
 from typing import List, Dict, Tuple, Optional, Any
 from anime_list_apis.api.ApiInterface import ApiInterface
-from anime_list_apis.models.AnimeData import AnimeData
-from anime_list_apis.models.AnimeListEntry import AnimeListEntry
-from anime_list_apis.models.AnimeUserData import AnimeUserData
-from anime_list_apis.models.attributes.AiringStatus import AiringStatus
+from anime_list_apis.models.MediaData import AnimeData
+from anime_list_apis.models.MediaListEntry import AnimeListEntry
+from anime_list_apis.models.MediaUserData import AnimeUserData
+from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.Title import Title, TitleType
-from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
+from anime_list_apis.models.attributes.ConsumingStatus import ConsumingStatus
 
 
 class AnilistApi(ApiInterface):
@@ -240,13 +240,11 @@ class AnilistApi(ApiInterface):
         :return: The generated AnimeUserData object
         """
         watching_status = data["status"]
-        watching_status = watching_status.replace("CURRENT", "WATCHING")
-        watching_status = watching_status.replace("REPEATING", "REWATCHING")
 
         return AnimeUserData(
             data["user"]["name"],
             Score(data["score"], ScoreType.PERCENTAGE),
-            WatchingStatus[watching_status],
+            ConsumingStatus[watching_status],
             data["progress"],
             self.__resolve_date(data["startedAt"]),
             self.__resolve_date(data["completedAt"])
@@ -280,7 +278,7 @@ class AnilistApi(ApiInterface):
         airing_status = data["status"]
         if airing_status == "NOT_YET_RELEASED":
             airing_status = "NOT_RELEASED"
-        airing_status = AiringStatus[airing_status]
+        airing_status = ReleasingStatus[airing_status]
 
         return AnimeData(
             _id,

@@ -21,7 +21,7 @@ import os
 import json
 from typing import Dict, Optional
 
-from anime_list_apis.models.AnimeData import AnimeData
+from anime_list_apis.models.MediaData import AnimeData
 from anime_list_apis.models.attributes.Id import IdType, Id
 from anime_list_apis.models.attributes.MediaType import MediaType
 

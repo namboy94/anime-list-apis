@@ -23,7 +23,7 @@ from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.Date import Date
-from anime_list_apis.models.attributes.WatchingStatus import WatchingStatus
+from anime_list_apis.models.attributes.ConsumingStatus import ConsumingStatus
 
 
 class AnimeUserData(Serializable):
@@ -35,36 +35,36 @@ class AnimeUserData(Serializable):
             self,
             username: str,
             score: Score,
-            watching_status: WatchingStatus,
+            consuming_status: ConsumingStatus,
             episode_progress: int,
-            watching_start:  Optional[Date],
-            watching_end: Optional[Date]
+            consuming_start:  Optional[Date],
+            consuming_end: Optional[Date]
     ):
         """
         Initializes the AnimeUserData object
         :param username: The user's username
         :param score: The user's score for this anime
-        :param watching_status: The user's current watching status
+        :param consuming_status: The user's current watching status
         :param episode_progress: The user's progress
-        :param watching_start: The date on which the user started watching
-        :param watching_end: The date on which the user completed the show
+        :param consuming_start: The date on which the user started watching
+        :param consuming_end: The date on which the user completed the show
         :raises TypeError: If any of the parameters has a wrong type
         """
         self.ensure_type(username, str)
         self.ensure_type(score, Score)
-        self.ensure_type(watching_status, WatchingStatus)
+        self.ensure_type(consuming_status, ConsumingStatus)
         self.ensure_type(episode_progress, int)
-        self.ensure_type(watching_start, Date, True)
-        self.ensure_type(watching_end, Date, True)
+        self.ensure_type(consuming_start, Date, True)
+        self.ensure_type(consuming_end, Date, True)
 
         self.media_type = MediaType.ANIME
 
         self.username = username
         self.score = score
-        self.watching_status = watching_status
+        self.consuming_status = consuming_status
         self.episode_progress = episode_progress
-        self.watching_start = watching_start  # type: Date
-        self.watching_end = watching_end  # type: Date
+        self.consuming_start = consuming_start  # type: Date
+        self.consuming_end = consuming_end  # type: Date
 
     def is_valid_entry(self) -> bool:
         """
@@ -72,22 +72,22 @@ class AnimeUserData(Serializable):
         :return: True, if all required attributes are valid and present
         """
         score_zero = self.score.get(ScoreType.PERCENTAGE) == 0
-        begin_none = self.watching_start is None
-        complete_none = self.watching_end is None
+        begin_none = self.consuming_start is None
+        complete_none = self.consuming_end is None
 
-        if self.watching_status in [
-            WatchingStatus.COMPLETED, WatchingStatus.REWATCHING
+        if self.consuming_status in [
+            ConsumingStatus.COMPLETED, ConsumingStatus.REPEATING
         ]:
             return not score_zero and not begin_none and not complete_none
 
-        elif self.watching_status in [
-            WatchingStatus.DROPPED,
-            WatchingStatus.WATCHING,
-            WatchingStatus.PAUSED
+        elif self.consuming_status in [
+            ConsumingStatus.DROPPED,
+            ConsumingStatus.CURRENT,
+            ConsumingStatus.PAUSED
         ]:
             return not begin_none and complete_none
 
-        else:  # self.watching_status == WatchingStatus.PLANNING:
+        else:  # self.consuming_status == WatchingStatus.PLANNING:
             return begin_none and complete_none and score_zero
 
     def _serialize(self) -> Dict[str, Optional[str or int or float or bool
@@ -99,13 +99,13 @@ class AnimeUserData(Serializable):
         serialized = {
             "username": self.username,
             "score": self.score.serialize(),
-            "watching_status": self.watching_status.name,
+            "consuming_status": self.consuming_status.name,
             "episode_progress": self.episode_progress,
-            "watching_start": self.watching_start,
-            "watching_end": self.watching_end
+            "consuming_start": self.consuming_start,
+            "consuming_end": self.consuming_end
         }
 
-        for date in ["watching_start", "watching_end"]:
+        for date in ["consuming_start", "consuming_end"]:
             if serialized[date] is not None:
                 serialized[date] = serialized[date].serialize()
 
@@ -113,7 +113,8 @@ class AnimeUserData(Serializable):
 
     @classmethod
     def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
-                                     or Dict or List or Tuple or Set]]):
+                                     or Dict or List or Tuple or Set]]
+                     ):
         """
         Deserializes a dictionary into an object of this type
         :param data: The data to deserialize
@@ -122,16 +123,16 @@ class AnimeUserData(Serializable):
         :raises ValueError: If the data could not be deserialized
         """
         data = deepcopy(data)
-        for date in ["watching_start", "watching_end"]:
+        for date in ["consuming_start", "consuming_end"]:
             if data[date] is not None:
                 data[date] = Date.deserialize(data[date])
 
         generated = cls(
             data["username"],
             Score.deserialize(data["score"]),
-            WatchingStatus[data["watching_status"]],
+            ConsumingStatus[data["consuming_status"]],
             data["episode_progress"],
-            data["watching_start"],
-            data["watching_end"]
+            data["consuming_start"],
+            data["consuming_end"]
         )  # type: AnimeUserData
         return generated

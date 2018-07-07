@@ -125,7 +125,7 @@ class TestMediaListEntry(TestCase):
         self.assertEqual(data.consuming_start, Date(2018, 1, 1))
         self.assertEqual(data.consuming_end, Date(2018, 4, 4))
         self.assertEqual(data.media_type, MediaType.ANIME)
-        
+
     def test_generating_manga_media_list_entry(self):
         """
         Tests generating a manga media list entry object

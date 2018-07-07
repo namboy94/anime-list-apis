@@ -182,7 +182,9 @@ class TestMediaUserData(TestCase):
                 entry = media_cls.deserialize(copy)
                 self.assertEqual(entry.serialize()[parameter], None)
 
-            for parameter in list(filter(lambda x: x not in allowed, data.keys())):
+            for parameter in list(filter(
+                    lambda x: x not in allowed, data.keys()
+            )):
                 copy = deepcopy(data)
                 copy[parameter] = None
                 try:

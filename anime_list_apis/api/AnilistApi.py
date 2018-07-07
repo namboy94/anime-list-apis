@@ -21,28 +21,22 @@ import time
 import json
 import requests
 from typing import List, Dict, Tuple, Optional, Any
+from anime_list_apis.cache.Cacher import Cacher
 from anime_list_apis.api.ApiInterface import ApiInterface
-from anime_list_apis.models.MediaData import AnimeData
-from anime_list_apis.models.MediaListEntry import AnimeListEntry
-from anime_list_apis.models.MediaUserData import AnimeUserData
-from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
+from anime_list_apis.models.MediaData import MediaData
+from anime_list_apis.models.MediaListEntry import MediaListEntry
+from anime_list_apis.models.MediaUserData import MediaUserData
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.Title import Title, TitleType
-from anime_list_apis.models.attributes.ConsumingStatus import ConsumingStatus
 
 
 class AnilistApi(ApiInterface):
     """
     Implements a wrapper around the anilist.co API
-    """
-
-    id_type = IdType.ANILIST
-    """
-    The ID type of the API interface
     """
 
     media_query = """
@@ -90,6 +84,7 @@ class AnilistApi(ApiInterface):
         score(format: POINT_100)
         status
         progress
+        progressVolumes
         startedAt {
             year
             month
@@ -108,18 +103,26 @@ class AnilistApi(ApiInterface):
     The query for a media list entry
     """
 
+    def __init__(self, cache: Cacher = None):
+        """
+        Initializes the Anilist Api interface.
+        Intializes cache or uses the one provided.
+        :param cache: The cache to use. If left as None, will use default cache
+        """
+        super().__init__(IdType.ANILIST, cache)
+
     def _get_data(
             self,
             media_type: MediaType,
             _id: int or Id
-    ) -> Optional[AnimeData]:  # TODO Manga
+    ) -> Optional[MediaData]:
         """
         Retrieves a single data object using the API
         :param media_type: The media type to retrieve
         :param _id: The ID to retrieve. May be either an int or an Id object
         :return: The Anime Data or None if no valid data was found
         """
-        id_tuple = self.__resolve_query_id(_id, True)
+        id_tuple = self.__resolve_query_id(media_type, _id, True)
         if id_tuple is None:
             return None
         query_id, id_type = id_tuple
@@ -139,14 +142,14 @@ class AnilistApi(ApiInterface):
         if data is None:
             return None
         else:
-            return self.__generate_anime_data(data["Media"])
+            return self.__generate_media_data(media_type, data["Media"])
 
     def get_list_entry(
             self,
             media_type: MediaType,
             _id: int or Id,
             username: str
-    ) -> Optional[AnimeListEntry]:  # TODO Manga
+    ) -> Optional[MediaListEntry]:
         """
         Retrieves a user list entry
         :param media_type: The media type to fetch
@@ -155,31 +158,52 @@ class AnilistApi(ApiInterface):
         :return: The entry for the user or
                  None if the user doesn't have such an entry
         """
-        id_tuple = self.__resolve_query_id(_id, False)
+        id_tuple = self.__resolve_query_id(media_type, _id, False)
         if id_tuple is None:
             return None
         query_id = id_tuple[0]
 
+        # Currently we can't get all the information in one go due to some
+        # 500 internal server errors.
+        # Once this is fixed, the following should stand here:
+        # inject = self.media_list_entry_query
+        inject = self.media_list_entry_query.replace(
+            self.media_query,
+            "id"
+        )
+
         query = """
             query ($id: Int, $username: String, $type: MediaType) {
                 MediaList(mediaId: $id, userName: $username, type: $type) {
-                    """ + self.media_list_entry_query + """
+                    """ + inject + """
                 }
             }
         """
-        variables = {"id": query_id, "type": media_type.name}
+        variables = {
+            "id": query_id,
+            "type": media_type.name,
+            "username": username
+        }
         result = self.__graphql_query(query, variables)
 
         if result is None:
             return None
         else:
-            anime_data = \
-                self.__generate_anime_data(result["MediaList"]["media"])
-            user_data = self.__generate_anime_user_data(result["MediaList"])
-            return AnimeListEntry(anime_data, user_data)
+
+            # Again, due to 500 Server errors we have to hack around a bit
+            # media_data = self.__generate_media_data(
+            #     media_type, result["MediaList"]["media"]
+            # )
+            media_data = self.get_data(media_type, _id)
+
+            user_data = self.__generate_media_user_data(
+                media_type, result["MediaList"]
+            )
+            entry_cls = MediaListEntry.get_class_for_media_type(media_type)
+            return entry_cls(media_data, user_data)
 
     def get_list(self, media_type: MediaType, username: str) \
-            -> List[AnimeListEntry]:  # TODO Manga
+            -> List[MediaListEntry]:
         """
         Retrieves a user's entire list
         :param media_type: The media type to fetch
@@ -205,55 +229,85 @@ class AnilistApi(ApiInterface):
         else:
 
             entries = []
+            entry_cls = MediaListEntry.get_class_for_media_type(media_type)
+
             for collection in result["MediaListCollection"]["lists"]:
                 for entry in collection["entries"]:
-                    anime_data = self.__generate_anime_data(entry["media"])
-                    user_data = self.__generate_anime_user_data(entry)
-                    entries.append(AnimeListEntry(anime_data, user_data))
+                    media_data = self.__generate_media_data(
+                        media_type,
+                        entry["media"]
+                    )
+                    user_data = self.__generate_media_user_data(
+                        media_type,
+                        entry
+                    )
+                    entries.append(entry_cls(media_data, user_data))
             return entries
 
-    def get_anilist_id_from_mal_id(self, mal_id: int) -> Optional[int]:
+    def get_anilist_id_from_mal_id(self, media_type: MediaType,
+                                   mal_id: int) -> Optional[int]:
         """
         Retrieves an anilist ID from a myanimelist ID
+        :param media_type: The media type of the myanimelist ID
         :param mal_id: The myanimelist ID
         :return: The anilist ID. May be None if myanimelist ID has no
                  equivalent on anilist
         """
         query = """
-            query ($mal_id: Int) {
-                Media(idMal: $mal_id) {
+            query ($mal_id: Int, $type: MediaType) {
+                Media(idMal: $mal_id, type: $type) {
                     id
                 }
             }
         """
-        variables = {"mal_id": mal_id}
+        variables = {"mal_id": mal_id, "type": media_type.name}
         result = self.__graphql_query(query, variables)
         if result is None:
             return None
         else:
             return result["Media"]["id"]
 
-    def __generate_anime_user_data(self, data: Dict[str, Any]):
+    @staticmethod
+    def __generate_media_user_data(media_type: MediaType,
+                                   data: Dict[str, Any]) -> MediaUserData:
         """
-        Generates an Anime User Data object from JSON data
+        Generates an Media User Data object from JSON data
+        :param media_type: The media type to generate
         :param data: The data to parse as User Data
-        :return: The generated AnimeUserData object
+        :return: The generated MediaUserData object
         """
-        watching_status = data["status"]
+        serialized = {
+            "media_type": media_type.name,
+            "username": data["user"]["name"],
+            "score": Score(data["score"], ScoreType.PERCENTAGE).serialize(),
+            "consuming_status": data["status"],
+            "episode_progress": data["progress"],
+            "chapter_progress": data["progress"],
+            "volume_progress": data["progressVolumes"]
+        }
 
-        return AnimeUserData(
-            data["user"]["name"],
-            Score(data["score"], ScoreType.PERCENTAGE),
-            ConsumingStatus[watching_status],
-            data["progress"],
-            self.__resolve_date(data["startedAt"]),
-            self.__resolve_date(data["completedAt"])
-        )
+        for api_key, dict_key in {
+            "startedAt": "consuming_start",
+            "completedAt": "consuming_end"
+        }.items():
+            try:
+                serialized[dict_key] = Date(
+                    data[api_key]["year"],
+                    data[api_key]["month"],
+                    data[api_key]["day"]
+                ).serialize()
+            except (TypeError, ValueError):
+                serialized[dict_key] = None
+
+        return MediaUserData.deserialize(serialized)
 
     # noinspection PyTypeChecker
-    def __generate_anime_data(self, data: Dict[str, Any]) -> AnimeData:
+    @staticmethod
+    def __generate_media_data(media_type: MediaType,
+                              data: Dict[str, Any]) -> MediaData:
         """
-        Generates an AnimeData object from a GraphQL result
+        Generates an MediaData object from a GraphQL result
+        :param media_type: The media type to generate
         :param data: The data to convert into an AnimeData object
         :return: The generated AnimeData object
         """
@@ -261,36 +315,64 @@ class AnilistApi(ApiInterface):
             IdType.ANILIST: data["id"],
             IdType.MYANIMELIST: data["idMal"]
         })
+
         title = Title({
             TitleType.ROMAJI: data["title"]["romaji"],
             TitleType.ENGLISH: data["title"]["english"],
             TitleType.JAPANESE: data["title"]["native"],
         })
+        if title.get(TitleType.ENGLISH) is None:
+            title.set(title.get(TitleType.ROMAJI), TitleType.ENGLISH)
+
         relations = []
         for relation in data["relations"]["edges"]:
             dest_id = Id({
                 IdType.ANILIST: relation["node"]["id"],
                 IdType.MYANIMELIST: relation["node"]["idMal"]
             })
+            dest_media_type = media_type
             rel_type = RelationType[relation["relationType"]]
-            relations.append(Relation(_id, dest_id, rel_type))
 
-        airing_status = data["status"]
-        if airing_status == "NOT_YET_RELEASED":
-            airing_status = "NOT_RELEASED"
-        airing_status = ReleasingStatus[airing_status]
+            if rel_type == RelationType.ADAPTATION:
+                if media_type == MediaType.ANIME:
+                    dest_media_type = MediaType.MANGA
+                else:
+                    dest_media_type = MediaType.ANIME
 
-        return AnimeData(
-            _id,
-            title,
-            relations,
-            airing_status,
-            self.__resolve_date(data["startDate"]),
-            self.__resolve_date(data["endDate"]),
-            data["episodes"],
-            data["duration"],
-            data["coverImage"]["large"]
-        )
+            relations.append(Relation(
+                _id, media_type, dest_id, dest_media_type, rel_type
+            ).serialize())
+
+        releasing_status = \
+            data["status"].replace("NOT_YET_RELEASED", "NOT_RELEASED")
+
+        serialized = {
+            "media_type": media_type.name,
+            "id": _id.serialize(),
+            "title": title.serialize(),
+            "relations": relations,
+            "releasing_status": releasing_status,
+            "cover_url": data["coverImage"]["large"],
+            "episode_count": data["episodes"],
+            "episode_duration": data["duration"],
+            "chapter_count": data["episodes"],
+            "volume_count": data["episodes"]
+        }
+
+        for api_key, dict_key in {
+            "startDate": "releasing_start",
+            "endDate": "releasing_end"
+        }.items():
+            try:
+                serialized[dict_key] = Date(
+                    data[api_key]["year"],
+                    data[api_key]["month"],
+                    data[api_key]["day"]
+                ).serialize()
+            except (TypeError, ValueError):
+                serialized[dict_key] = None
+
+        return MediaData.deserialize(serialized)
 
     @staticmethod
     def __graphql_query(query: str, variables: Dict[str, Any]) \
@@ -307,32 +389,18 @@ class AnilistApi(ApiInterface):
         )
         time.sleep(0.5)  # For rate limiting
         result = json.loads(response.text)
+        print(result)
 
         if "errors" in result:
             return None
         else:
             return result["data"]
 
-    @staticmethod
-    def __resolve_date(date_data: Dict[str, int]) -> Optional[Date]:
-        """
-        Resolves a date dictionary into either a Date object or None
-        :param date_data: The date data to use
-        :return: The generated Date object or None if invalid date
-        """
-        try:
-            return Date(
-                date_data["year"],
-                date_data["month"],
-                date_data["day"]
-            )
-        except (ValueError, TypeError):
-            return None
-
-    def __resolve_query_id(self, _id: int or Id, allow_mal: bool) \
-            -> Optional[Tuple[int, IdType]]:
+    def __resolve_query_id(self, media_type: MediaType, _id: int or Id,
+                           allow_mal: bool) -> Optional[Tuple[int, IdType]]:
         """
         Calculates the ID value to use in a query
+        :param media_type: The media type of the ID
         :param _id: The ID, which may be an Id object or an int value
         :param allow_mal: If True, may return a Myanimelist ID.
                           This will be signified by the second return value
@@ -353,7 +421,9 @@ class AnilistApi(ApiInterface):
             if allow_mal:
                 id_type = IdType.MYANIMELIST
             else:
-                query_id = self.get_anilist_id_from_mal_id(query_id)
+                query_id = self.get_anilist_id_from_mal_id(
+                    media_type, query_id
+                )
 
         else:
             query_id = anilist_id

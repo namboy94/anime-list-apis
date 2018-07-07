@@ -68,7 +68,7 @@ class MediaListEntry(Serializable):
         :return: The generated MediaData object
         :raises TypeError: If any of the internal parameters has a wrong type
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def get_user_data(self) -> MediaUserData:
         """
@@ -76,7 +76,7 @@ class MediaListEntry(Serializable):
         :return: The generated MediaUserData object
         :raises TypeError: If any of the internal parameters has a wrong type
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def is_valid_entry(self) -> bool:
         """
@@ -109,6 +109,17 @@ class MediaListEntry(Serializable):
         else:  # AiringStatus.NOT_RELEASESD
             return begin_none and complete_none and score_zero \
                    and not consuming_complete and not started_watching
+
+    @classmethod
+    def get_class_for_media_type(cls, media_type: MediaType):
+        """
+        Maps a class to a media type
+        :param media_type: The media type
+        :return: The class mapped to that media type
+        """
+        return AnimeListEntry \
+            if media_type == MediaType.ANIME \
+            else MangaListEntry
 
     def _serialize(self) -> Dict[str, Optional[str or int or float or bool
                                  or Dict or List or Tuple or Set]]:

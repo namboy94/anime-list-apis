@@ -153,7 +153,7 @@ class MediaSerializable(Serializable):
         :param media_type: The media type
         :return: The class mapped to that media type
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     @classmethod
     def _get_common_deserialized_components(
@@ -167,7 +167,7 @@ class MediaSerializable(Serializable):
         :param data: The data to deserialize
         :return: The deserialized dictionary
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     @classmethod
     def _get_specific_deserialized_components(
@@ -181,7 +181,7 @@ class MediaSerializable(Serializable):
         :param data: The data to deserialize
         :return: The deserialized dictionary
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     @classmethod
     def _get_common_parameter_order(cls) -> List[str]:
@@ -190,7 +190,7 @@ class MediaSerializable(Serializable):
         used for media classes
         :return: The order of common parameters
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     @classmethod
     def _get_additional_parameter_order(cls) -> List[str]:
@@ -198,7 +198,7 @@ class MediaSerializable(Serializable):
         Generates the order of class-specific additional constructor parameters
         :return: The order of the additional parameters
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     @classmethod
     def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool

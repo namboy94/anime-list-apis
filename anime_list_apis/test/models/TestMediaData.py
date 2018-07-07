@@ -277,13 +277,13 @@ class TestMediaData(TestCase):
             (MangaData, self.generate_sample_serialized_manga_data())
         ]:
             for key, value in sample.items():
-    
+
                 for faux_value in [2000, "Hello", Id({IdType.KITSU: 1})]:
                     if type(faux_value) != type(value):
                         copy = deepcopy(sample)
                         copy[key] = faux_value
                         attempt_deserialize(media_class, copy)
-    
+
                 copy = deepcopy(sample)
                 copy.pop(key)
                 attempt_deserialize(media_class, copy)
@@ -304,7 +304,7 @@ class TestMediaData(TestCase):
 
         two.releasing_start = None
         self.assertNotEqual(one, two)
-        
+
         self.assertNotEqual(one, self.generate_sample_manga_data())
 
     def test_string_representation(self):

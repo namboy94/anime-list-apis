@@ -269,8 +269,9 @@ class MangaUserData(MediaUserData):
         self.chapter_progress = chapter_progress
         self.volume_progress = volume_progress
 
-    def _serialize(self) -> Dict[str, Optional[str or int or float or bool
-                                               or Dict or List or Tuple or Set]]:
+    def _serialize(self) -> Dict[str,
+                                 Optional[str or int or float or bool
+                                          or Dict or List or Tuple or Set]]:
         """
         Serializes the object into a dictionary
         :return: The serialized form of this object

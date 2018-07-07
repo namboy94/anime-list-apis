@@ -19,6 +19,7 @@ LICENSE"""
 
 from typing import List, Optional
 from anime_list_apis.api.ApiInterface import ApiInterface
+from anime_list_apis.cache.Cacher import Cacher
 from anime_list_apis.models.MediaData import AnimeData
 from anime_list_apis.models.MediaListEntry import AnimeListEntry
 from anime_list_apis.models.attributes.Id import Id, IdType
@@ -30,10 +31,13 @@ class KitsuApi(ApiInterface):
     Implements a wrapper around the kitsu.io API
     """
 
-    id_type = IdType.KITSU
-    """
-    The ID type of the API interface
-    """
+    def __init__(self, cache: Cacher = None):
+        """
+        Initializes the Kitsu Api interface.
+        Intializes cache or uses the one provided.
+        :param cache: The cache to use. If left as None, will use default cache
+        """
+        super().__init__(IdType.KITSU, cache)
 
     def _get_data(
             self,

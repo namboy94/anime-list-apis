@@ -20,8 +20,7 @@ LICENSE"""
 import os
 import json
 from typing import Dict, Optional
-
-from anime_list_apis.models.MediaData import AnimeData
+from anime_list_apis.models.MediaData import MediaData
 from anime_list_apis.models.attributes.Id import IdType, Id
 from anime_list_apis.models.attributes.MediaType import MediaType
 
@@ -100,32 +99,25 @@ class Cacher:
                 site_type = IdType[_site_type]
 
                 for _id, data in site_data.items():
-
-                    if media_type == MediaType.ANIME:
-                        entry = AnimeData.deserialize(data)
-                    else:
-                        continue  # TODO Implement Manga
-
+                    entry = MediaData.deserialize(data)
                     self.__cache[media_type][site_type][int(_id)] = entry
 
     def add(
             self,
-            media_type: MediaType,
             site_type: IdType,
-            entry: AnimeData  # TODO Add Manga
+            entry: MediaData
     ):
         """
         Adds an entry to the cache
-        :param media_type: The media type to add
         :param site_type: The site for which to add the entry
         :param entry: The entry to add
         :return: None
         """
         _id = entry.id.get(site_type)
-        self.__cache[media_type][site_type][_id] = entry
+        self.__cache[entry.media_type][site_type][_id] = entry
 
     def get(self, media_type: MediaType, site_type: IdType, _id: int or Id) \
-            -> Optional[AnimeData]:  # TODO Manga
+            -> Optional[MediaData]:
         """
         Retrieves an entry from the cache
         :param media_type: The type of the media
@@ -145,7 +137,7 @@ class Cacher:
     def __generate_empty_cache() \
             -> Dict[MediaType,
                     Dict[IdType,
-                         Dict[int, AnimeData]]]:  # TODO Manga
+                         Dict[int, MediaData]]]:
         """
         Generates a fresh cache
         :return: The generated cache dictionary

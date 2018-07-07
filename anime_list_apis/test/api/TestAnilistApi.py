@@ -25,6 +25,7 @@ from anime_list_apis.api.AnilistApi import AnilistApi
 from anime_list_apis.cache.Cacher import Cacher
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
+from anime_list_apis.models.attributes.Title import TitleType
 
 
 class TestAnilistApi(TestCase):
@@ -124,6 +125,8 @@ class TestAnilistApi(TestCase):
         ))
 
         for entry in entries:
+            self.assertEqual(entry.title.get(TitleType.ROMAJI), "Steins;Gate")
+            self.assertEqual(entry.username, "namboy94")
             for compared in entries:
                 self.assertEqual(entry, compared)
 
@@ -182,3 +185,44 @@ class TestAnilistApi(TestCase):
             with mock.patch("requests.get", new=raise_value_error):
                 new_fetched = self.api.get_anime_data(1)
                 self.assertEqual(new_fetched, cached)
+
+
+class TestAnilistApiSpecific(TestCase):
+    """
+    Tests specifically for the Anilist API
+    """
+
+    def setUp(self):
+        """
+        Creates a cache
+        :return: None
+        """
+        self.tearDown()
+        os.makedirs("testdir")
+        self.cache = Cacher("testdir/.cache")
+        self.api = AnilistApi(cache=self.cache)
+
+    def tearDown(self):
+        """
+        Removes all generated files and directories
+        :return: None
+        """
+        if os.path.isdir("testdir"):
+            shutil.rmtree("testdir")
+
+    def test_filling_in_english_title_with_romaji(self):
+        """
+        Some titles don't have an english title entry on anilist.
+        In such cases, the romaji will automatically be filled in into the
+        english title.
+        :return: None
+        """
+        steins_gate = self.api.get_anime_data(9253)
+        self.assertEqual(
+            steins_gate.title.get(TitleType.ROMAJI),
+            steins_gate.title.get(TitleType.ENGLISH),
+        )
+        self.assertEqual(
+            steins_gate.title.get(TitleType.ROMAJI),
+            "Steins;Gate",
+        )

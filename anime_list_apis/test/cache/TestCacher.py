@@ -23,7 +23,7 @@ from unittest import TestCase
 from anime_list_apis.cache.Cacher import Cacher
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Id import IdType
-from anime_list_apis.test.models.TestMediaData import TestAnimeData
+from anime_list_apis.test.models.TestMediaData import TestMediaData
 
 
 class TestCacher(TestCase):
@@ -63,9 +63,9 @@ class TestCacher(TestCase):
         in a different Cache object
         :return: None
         """
-        entry = TestAnimeData.generate_sample_anime_data()
+        entry = TestMediaData.generate_sample_anime_data()
         _id = entry.id
-        self.cache.add(MediaType.ANIME, IdType.MYANIMELIST, entry)
+        self.cache.add(IdType.MYANIMELIST, entry)
         self.cache.write()
         new_cache = Cacher("testdir/.cache")
         self.assertEqual(
@@ -90,11 +90,11 @@ class TestCacher(TestCase):
         Tests retrieving entries by using ints instead of Id objects
         :return: None
         """
-        entry = TestAnimeData.generate_sample_anime_data()
+        entry = TestMediaData.generate_sample_anime_data()
         id_obj = entry.id
         id_int = id_obj.get(IdType.MYANIMELIST)
 
-        self.cache.add(MediaType.ANIME, IdType.MYANIMELIST, entry)
+        self.cache.add(IdType.MYANIMELIST, entry)
 
         self.assertEqual(
             self.cache.get(MediaType.ANIME, IdType.MYANIMELIST, id_int),

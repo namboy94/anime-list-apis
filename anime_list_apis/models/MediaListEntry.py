@@ -18,80 +18,65 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from typing import Dict, List, Tuple, Set, Optional
-from anime_list_apis.models.MediaData import AnimeData
-from anime_list_apis.models.MediaUserData import AnimeUserData
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import ScoreType
 from anime_list_apis.models.attributes.ConsumingStatus import ConsumingStatus
+from anime_list_apis.models.MediaData import \
+    AnimeData, MangaData, MediaData
+from anime_list_apis.models.MediaUserData import \
+    AnimeUserData, MangaUserData, MediaUserData
 
 
-class AnimeListEntry(Serializable):
+class MediaListEntry(Serializable):
+    """
+    Class that models a user's media list entry
+    """
 
-    def __init__(self, anime_data: AnimeData, user_data: AnimeUserData):
+    def __init__(self, media_type: MediaType,
+                 media_data: MediaData, user_data: MediaUserData):
         """
-        Initializes the anime list entry.
-        By subclassing both AnimeData and AnimeUserData, it's possible to
-        access all of their attributes
-        :param anime_data: The anime data
+        Initializes the media list entry.
+        :param media_data: The media data
         :param user_data: The user data
         :raises TypeError: If any of the parameters has a wrong type
         """
-        self.ensure_type(anime_data, AnimeData)
-        self.ensure_type(user_data, AnimeUserData)
+        self.ensure_type(media_data,
+                         MediaData.get_class_for_media_type(media_type))
+        self.ensure_type(user_data,
+                         MediaUserData.get_class_for_media_type(media_type))
 
-        self.media_type = MediaType.ANIME
-
-        self.id = anime_data.id
-        self.title = anime_data.title
-        self.relations = anime_data.relations
-        self.releasing_status = anime_data.releasing_status
-        self.releasing_start = anime_data.releasing_start
-        self.releasing_end = anime_data.releasing_end
-        self.episode_count = anime_data.episode_count
-        self.episode_duration = anime_data.episode_duration
-        self.cover_url = anime_data.cover_url
+        self.media_type = media_type
+        self.id = media_data.id
+        self.title = media_data.title
+        self.relations = media_data.relations
+        self.releasing_status = media_data.releasing_status
+        self.releasing_start = media_data.releasing_start
+        self.releasing_end = media_data.releasing_end
+        self.cover_url = media_data.cover_url
 
         self.username = user_data.username
         self.score = user_data.score
         self.consuming_status = user_data.consuming_status
-        self.episode_progress = user_data.episode_progress
         self.consuming_start = user_data.consuming_start
         self.consuming_end = user_data.consuming_end
 
-    def get_anime_data(self) -> AnimeData:
+    def get_media_data(self) -> MediaData:
         """
-        Generates a new AnimeData object from the internal representation
-        :return: The generated AnimeData object
+        Generates a new MediaData object from the internal representation
+        :return: The generated MediaData object
         :raises TypeError: If any of the internal parameters has a wrong type
         """
-        return AnimeData(
-            self.id,
-            self.title,
-            self.relations,
-            self.releasing_status,
-            self.releasing_start,
-            self.releasing_end,
-            self.episode_count,
-            self.episode_duration,
-            self.cover_url
-        )
+        raise NotImplementedError()
 
-    def get_user_data(self) -> AnimeUserData:
+    def get_user_data(self) -> MediaUserData:
         """
-        Generates a new AnimeUserData object from the internal representation
-        :return: The generated AnimeUserData object
+        Generates a new MediaUserData object from the internal representation
+        :return: The generated MediaUserData object
         :raises TypeError: If any of the internal parameters has a wrong type
         """
-        return AnimeUserData(
-            self.username,
-            self.score,
-            self.consuming_status,
-            self.episode_progress,
-            self.consuming_start,
-            self.consuming_end
-        )
+        raise NotImplementedError()
 
     def is_valid_entry(self) -> bool:
         """
@@ -132,7 +117,8 @@ class AnimeListEntry(Serializable):
         :return: The serialized form of this object
         """
         return {
-            "anime_data": self.get_anime_data().serialize(),
+            "media_type": self.media_type.name,
+            "media_data": self.get_media_data().serialize(),
             "user_data": self.get_user_data().serialize()
         }
 
@@ -146,8 +132,120 @@ class AnimeListEntry(Serializable):
         :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
-        generated = cls(
-            AnimeData.deserialize(data["anime_data"]),
-            AnimeUserData.deserialize(data["user_data"])
-        )  # type: AnimeListEntry
+        media_type = MediaType[data["media_type"]]
+        _cls = AnimeListEntry \
+            if media_type == MediaType.ANIME \
+            else MangaListEntry
+
+        media_data = MediaData.deserialize(data["media_data"])
+        user_data = MediaUserData.deserialize(data["user_data"])
+
+        generated = _cls(
+            media_data,
+            user_data
+        )  # type: MediaListEntry
         return generated
+
+
+class AnimeListEntry(MediaListEntry):
+    """
+    Class that models a user's anime list entry
+    """
+
+    def __init__(self, anime_data: AnimeData, user_data: AnimeUserData):
+        """
+        Initializes the anime list entry.
+        :param anime_data: The anime data
+        :param user_data: The user data
+        :raises TypeError: If any of the parameters has a wrong type
+        """
+        super().__init__(MediaType.ANIME, anime_data, user_data)
+        self.episode_count = anime_data.episode_count
+        self.episode_duration = anime_data.episode_duration
+        self.episode_progress = user_data.episode_progress
+
+    def get_media_data(self) -> AnimeData:
+        """
+        Generates a new AnimeData object from the internal representation
+        :return: The generated AnimeData object
+        :raises TypeError: If any of the internal parameters has a wrong type
+        """
+        return AnimeData(
+            self.id,
+            self.title,
+            self.relations,
+            self.releasing_status,
+            self.releasing_start,
+            self.releasing_end,
+            self.cover_url,
+            self.episode_count,
+            self.episode_duration
+        )
+
+    def get_user_data(self) -> AnimeUserData:
+        """
+        Generates a new AnimeUserData object from the internal representation
+        :return: The generated AnimeUserData object
+        :raises TypeError: If any of the internal parameters has a wrong type
+        """
+        return AnimeUserData(
+            self.username,
+            self.score,
+            self.consuming_status,
+            self.consuming_start,
+            self.consuming_end,
+            self.episode_progress
+        )
+
+
+class MangaListEntry(MediaListEntry):
+    """
+    Class that models a user's manga list entry
+    """
+
+    def __init__(self, manga_data: MangaData, user_data: MangaUserData):
+        """
+        Initializes the manga list entry.
+        :param manga_data: The manga data
+        :param user_data: The user data
+        :raises TypeError: If any of the parameters has a wrong type
+        """
+        super().__init__(MediaType.MANGA, manga_data, user_data)
+        self.chapter_count = manga_data.chapter_count
+        self.volume_count = manga_data.volume_count
+        self.chapter_progress = user_data.chapter_progress
+        self.volume_progress = user_data.volume_progress
+
+    def get_media_data(self) -> MangaData:
+        """
+        Generates a new MangaData object from the internal representation
+        :return: The generated MangaData object
+        :raises TypeError: If any of the internal parameters has a wrong type
+        """
+        return MangaData(
+            self.id,
+            self.title,
+            self.relations,
+            self.releasing_status,
+            self.releasing_start,
+            self.releasing_end,
+            self.cover_url,
+            self.chapter_count,
+            self.volume_count
+        )
+
+    def get_user_data(self) -> MangaUserData:
+        """
+        Generates a new MangaUserData object from the internal representation
+        :return: The generated MangaUserData object
+        :raises TypeError: If any of the internal parameters has a wrong type
+        """
+        return MangaUserData(
+            self.username,
+            self.score,
+            self.consuming_status,
+            self.consuming_start,
+            self.consuming_end,
+            self.chapter_progress,
+            self.volume_progress
+        )

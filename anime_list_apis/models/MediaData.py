@@ -17,9 +17,8 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-from copy import deepcopy
 from typing import Dict, List, Tuple, Set, Optional
-from anime_list_apis.models.Serializable import Serializable
+from anime_list_apis.models.Serializable import MediaSerializable
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id
 from anime_list_apis.models.attributes.MediaType import MediaType
@@ -28,7 +27,8 @@ from anime_list_apis.models.attributes.Relation import Relation
 from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 
 
-class MediaData(Serializable):
+# noinspection PyAbstractClass
+class MediaData(MediaSerializable):
     """
     Class that models user-independent media data
     """
@@ -101,6 +101,15 @@ class MediaData(Serializable):
         }
 
     @classmethod
+    def get_class_for_media_type(cls, media_type: MediaType):
+        """
+        Maps a class to a media type
+        :param media_type: The media type
+        :return: The class mapped to that media type
+        """
+        return AnimeData if media_type == MediaType.ANIME else MangaData
+
+    @classmethod
     def _get_common_deserialized_components(
             cls,
             data: Dict[str, Optional[str or int or float or bool or
@@ -134,20 +143,6 @@ class MediaData(Serializable):
         return deserialized
 
     @classmethod
-    def _get_specific_deserialized_components(
-            cls,
-            data: Dict[str, Optional[str or int or float or bool or
-                                     Dict or List or Tuple or Set]]) \
-            -> Dict[str, Optional[str or int or float or bool or
-                                  Dict or List or Tuple or Set]]:
-        """
-        Deserializes class-specific child components of the data dictionary
-        :param data: The data to deserialize
-        :return: The deserialized dictionary
-        """
-        raise NotImplementedError()
-
-    @classmethod
     def _get_common_parameter_order(cls) -> List[str]:
         """
         Generates an order of constructor parameters for the common attributes
@@ -158,48 +153,6 @@ class MediaData(Serializable):
             "id", "title", "relations", "releasing_status", "releasing_start",
             "releasing_end", "cover_url"
         ]
-
-    @classmethod
-    def _get_additional_parameter_order(cls) -> List[str]:
-        """
-        Generates the order of class-specific additional constructor parameters
-        :return: The order of the additional parameters
-        """
-        raise NotImplementedError()
-
-    @classmethod
-    def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
-                                     or Dict or List or Tuple or Set]]):
-        """
-        Deserializes a dictionary into an object of this type
-        :param data: The data to deserialize
-        :return: The deserialized object
-        :raises TypeError: If a type error occurred
-        :raises ValueError: If the data could not be deserialized
-        """
-        data = deepcopy(data)  # To make sure not to change the original data
-
-        # Auto-resolve the MediaData subclass to use
-        media_cls = AnimeData \
-            if MediaType[data["media_type"]] == MediaType.ANIME \
-            else MangaData
-
-        deserialized_data = \
-            media_cls._get_common_deserialized_components(data)
-        # noinspection PyProtectedMember
-        specific_deserialized_data = \
-            media_cls._get_specific_deserialized_components(data)
-
-        for key, value in specific_deserialized_data.items():
-            deserialized_data[key] = value
-
-        # noinspection PyProtectedMember
-        parameter_order = \
-            media_cls._get_common_parameter_order() + \
-            media_cls._get_additional_parameter_order()
-
-        params = tuple(map(lambda x: deserialized_data[x], parameter_order))
-        return media_cls(*params)  # type: type(media_cls)
 
 
 class AnimeData(MediaData):

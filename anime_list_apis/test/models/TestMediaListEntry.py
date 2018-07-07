@@ -18,6 +18,7 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 import json
+from copy import deepcopy
 from unittest import TestCase
 from typing import Dict, List, Set, Tuple, Optional
 from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
@@ -45,7 +46,7 @@ class TestMediaListEntry(TestCase):
         Generates a sample AnimeListEntry object
         :return: The generated AnimeListEntry object
         """
-        return MediaListEntry(
+        return AnimeListEntry(
             TestMediaData.generate_sample_anime_data(),
             TestMediaUserData.generate_sample_anime_user_data()
         )
@@ -56,7 +57,7 @@ class TestMediaListEntry(TestCase):
         Generates a sample MangaListEntry object
         :return: The generated MangaListEntry object
         """
-        return MediaListEntry(
+        return MangaListEntry(
             TestMediaData.generate_sample_manga_data(),
             TestMediaUserData.generate_sample_manga_user_data()
         )
@@ -105,7 +106,9 @@ class TestMediaListEntry(TestCase):
             data.relations,
             [Relation(
                 Id({IdType.MYANIMELIST: 1}),
+                MediaType.ANIME,
                 Id({IdType.MYANIMELIST: 2}),
+                MediaType.MANGA,
                 RelationType.SEQUEL
             )]
         )
@@ -135,7 +138,9 @@ class TestMediaListEntry(TestCase):
             data.relations,
             [Relation(
                 Id({IdType.MYANIMELIST: 1}),
+                MediaType.MANGA,
                 Id({IdType.MYANIMELIST: 2}),
+                MediaType.MANGA,
                 RelationType.SEQUEL
             )]
         )
@@ -196,51 +201,65 @@ class TestMediaListEntry(TestCase):
         ]:
             self.assertTrue(entry.is_valid_entry())
 
+            zero = Score(0, ScoreType.PERCENTAGE).serialize()
+            non_zero = Score(70, ScoreType.PERCENTAGE).serialize()
             for config in [
                 [
                     ("media", "releasing_status", "RELEASING"),
                     ("user", "consuming_status", "CURRENT"),
-                    ("user", "score",
-                     Score(0, ScoreType.PERCENTAGE).serialize()),
+                    ("user", "score", zero),
                     ("user", "consuming_end", None)
                 ],
                 [
                     ("user", "consuming_status", "PLANNING"),
-                    ("user", "score",
-                     Score(0, ScoreType.PERCENTAGE).serialize()),
+                    ("user", "score", zero),
                     ("user", "consuming_start", None),
                     ("user", "consuming_end", None)
                 ],
                 [
-                    ("user", "score",
-                     Score(0, ScoreType.PERCENTAGE).serialize()),
-                    ("user", "score",
-                     Score(70, ScoreType.PERCENTAGE).serialize()),
+                    ("user", "score", zero),
+                    ("user", "score", non_zero),
                 ],
                 [
-                    ("media", "releasing_status",
-                     ReleasingStatus.NOT_RELEASED.name),
-                    ("user", "score",
-                     Score(0, ScoreType.PERCENTAGE).serialize()),
+                    ("media", "releasing_status", "NOT_RELEASED"),
+                    ("user", "score", zero),
                     ("user", "consuming_start", None),
                     ("user", "consuming_end", None),
                     ("user", "consuming_status", "CURRENT"),
                     ("user", "consuming_status", "PAUSED"),
                     ("user", "consuming_status", "DROPPED"),
-                    ("user", "consuming_status", "REPEATING"),
                     ("user", "consuming_status", "PLANNING")
                 ]
             ]:
+                data = deepcopy(serialized)
+
                 for i, conf in enumerate(config):
+
                     master, key, value = conf
 
-                    serialized[master + "_data"][key] = value
-                    entry = MediaListEntry.deserialize(serialized)
+                    data[master + "_data"][key] = value
+                    entry = MediaListEntry.deserialize(data)
 
                     if i == len(config) - 1:
                         self.assertTrue(entry.is_valid_entry())
                     else:
                         self.assertFalse(entry.is_valid_entry())
+
+    def test_mixing_anime_and_manga(self):
+        """
+        Tests that it's impossible to mix anime and manga data
+        :return:
+        """
+
+        try:
+            # noinspection PyTypeChecker
+            AnimeListEntry(
+                TestMediaData.generate_sample_manga_data(),
+                TestMediaUserData.generate_sample_manga_user_data()
+            )
+            self.fail()
+        except (TypeError, ValueError):
+            pass
 
     def test_serialization(self):
         """
@@ -273,6 +292,23 @@ class TestMediaListEntry(TestCase):
             ),
             self.generate_sample_manga_entry()
         )
+
+    def test_generic_deserialization(self):
+        """
+        Tests using the MediaListEntry class to deserialize
+        :return: None
+        """
+        anime_obj = self.generate_sample_anime_entry()
+        anime = MediaListEntry.deserialize(anime_obj.serialize())
+        self.assertEqual(anime_obj, anime)
+        self.assertEqual(anime.media_type, MediaType.ANIME)
+        self.assertTrue(isinstance(anime, AnimeListEntry))
+
+        manga_obj = self.generate_sample_manga_entry()
+        manga = MediaListEntry.deserialize(manga_obj.serialize())
+        self.assertEqual(manga_obj, manga)
+        self.assertEqual(manga.media_type, MediaType.MANGA)
+        self.assertTrue(isinstance(manga, MangaListEntry))
 
     def test_invalid_deserialization(self):
         """

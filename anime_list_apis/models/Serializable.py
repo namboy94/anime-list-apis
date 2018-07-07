@@ -18,7 +18,10 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 import json
+from copy import deepcopy
 from typing import Dict, List, Tuple, Set, Optional
+
+from anime_list_apis.models.attributes.MediaType import MediaType
 
 
 class Serializable:
@@ -135,3 +138,100 @@ class Serializable:
         """
         if not cls.type_check(obj, typ, none_allowed):
             raise TypeError(str(obj) + " is not of type " + str(typ))
+
+
+# noinspection PyAbstractClass
+class MediaSerializable(Serializable):
+    """
+    Class that allows for easier subclassing of Media classes
+    """
+
+    @classmethod
+    def get_class_for_media_type(cls, media_type: MediaType):
+        """
+        Maps a class to a media type
+        :param media_type: The media type
+        :return: The class mapped to that media type
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_common_deserialized_components(
+            cls,
+            data: Dict[str, Optional[str or int or float or bool or
+                                     Dict or List or Tuple or Set]]) \
+            -> Dict[str, Optional[str or int or float or bool or
+                                  Dict or List or Tuple or Set]]:
+        """
+        Deserializes the common child components of the data dictionary
+        :param data: The data to deserialize
+        :return: The deserialized dictionary
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_specific_deserialized_components(
+            cls,
+            data: Dict[str, Optional[str or int or float or bool or
+                                     Dict or List or Tuple or Set]]) \
+            -> Dict[str, Optional[str or int or float or bool or
+                                  Dict or List or Tuple or Set]]:
+        """
+        Deserializes class-specific child components of the data dictionary
+        :param data: The data to deserialize
+        :return: The deserialized dictionary
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_common_parameter_order(cls) -> List[str]:
+        """
+        Generates an order of constructor parameters for the common attributes
+        used for media classes
+        :return: The order of common parameters
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_additional_parameter_order(cls) -> List[str]:
+        """
+        Generates the order of class-specific additional constructor parameters
+        :return: The order of the additional parameters
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
+                                     or Dict or List or Tuple or Set]]):
+        """
+        Deserializes a dictionary into an object of this type
+        :param data: The data to deserialize
+        :return: The deserialized object
+        :raises TypeError: If a type error occurred
+        :raises ValueError: If the data could not be deserialized
+        """
+        data = deepcopy(data)  # To make sure not to change the original data
+
+        # Auto-resolve the subclass to use
+        _cls = cls.get_class_for_media_type(
+            MediaType[data["media_type"]]
+        )  # type: MediaSerializable
+
+        deserialized_data = \
+            _cls._get_common_deserialized_components(data)
+        # noinspection PyProtectedMember
+        specific_deserialized_data = \
+            _cls._get_specific_deserialized_components(data)
+
+        for key, value in specific_deserialized_data.items():
+            deserialized_data[key] = value
+
+        # noinspection PyProtectedMember
+        parameter_order = \
+            _cls._get_common_parameter_order() + \
+            _cls._get_additional_parameter_order()
+
+        params = tuple(map(lambda x: deserialized_data[x], parameter_order))
+
+        # noinspection PyCallingNonCallable
+        return _cls(*params)  # type: type(_cls)

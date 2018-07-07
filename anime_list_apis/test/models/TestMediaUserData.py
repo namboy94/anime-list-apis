@@ -44,9 +44,9 @@ class TestMediaUserData(TestCase):
             "namboy94",
             Score(55, ScoreType.PERCENTAGE),
             ConsumingStatus.COMPLETED,
-            12,
             Date(2018, 1, 1),
-            Date(2018, 4, 4)
+            Date(2018, 4, 4),
+            12
         )
 
     @staticmethod
@@ -59,10 +59,10 @@ class TestMediaUserData(TestCase):
             "namboy94",
             Score(55, ScoreType.PERCENTAGE),
             ConsumingStatus.COMPLETED,
-            100,
-            10,
             Date(2018, 1, 1),
-            Date(2018, 4, 4)
+            Date(2018, 4, 4),
+            100,
+            10
         )
 
     @staticmethod
@@ -126,7 +126,7 @@ class TestMediaUserData(TestCase):
         self.assertEqual(data.score, Score(55, ScoreType.PERCENTAGE))
         self.assertEqual(data.consuming_status, ConsumingStatus.COMPLETED)
         self.assertEqual(data.chapter_progress, 100)
-        self.assertEqual(data.volume_progress, 100)
+        self.assertEqual(data.volume_progress, 10)
         self.assertEqual(data.consuming_start, Date(2018, 1, 1))
         self.assertEqual(data.consuming_end, Date(2018, 4, 4))
         self.assertEqual(data.media_type, MediaType.MANGA)
@@ -232,7 +232,7 @@ class TestMediaUserData(TestCase):
 
     def test_generic_deserialization(self):
         """
-        Tests using the MediaData class to deserialize
+        Tests using the MediaUserData class to deserialize
         :return: None
         """
         anime_obj = self.generate_sample_anime_user_data()

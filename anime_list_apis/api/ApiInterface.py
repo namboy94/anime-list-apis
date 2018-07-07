@@ -18,7 +18,7 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from typing import List, Optional
-from anime_list_apis.cache.Cacher import Cacher
+from anime_list_apis.cache.Cache import Cache
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.MediaData import AnimeData, MangaData, MediaData
@@ -31,15 +31,24 @@ class ApiInterface:
     Defines methods that every API connector should implement
     """
 
-    def __init__(self, id_type: IdType, cache: Cacher = None):
+    def __init__(
+            self,
+            id_type: IdType,
+            cache: Cache = None,
+            rate_limit_pause: float = 0.0
+    ):
         """
         Initializes the Api interface.
         Intializes cache or uses the one provided.
         :param id_type: TheID type of the API Interface
         :param cache: The cache to use. If left as None, will use default cache
+        :param rate_limit_pause: A duration in seconds that the API Interface
+                                 will pause after a network operation to
+                                 prevent being rate limited
         """
-        self.cache = cache if cache is not None else Cacher()
+        self.cache = cache if cache is not None else Cache()
         self.id_type = id_type
+        self.rate_limit_pause = rate_limit_pause
 
     def get_data(
             self,
@@ -53,13 +62,13 @@ class ApiInterface:
         :param _id: The ID to retrieve. May be either an int or an Id object
         :return: The Media Data or None if no valid data was found
         """
-        cached = self.cache.get(media_type, IdType.ANILIST, _id)
+        cached = self.cache.get_media_data(media_type, IdType.ANILIST, _id)
 
         if cached is None:
             cached = self._get_data(media_type, _id)
 
             if cached is not None:
-                self.cache.add(self.id_type, cached)
+                self.cache.add_media_data(self.id_type, cached)
 
         return cached
 
@@ -75,7 +84,7 @@ class ApiInterface:
         :param _id: The ID to retrieve. May be either an int or an Id object
         :return: The Anime Data or None if no valid data was found
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def get_list_entry(
             self,
@@ -91,7 +100,7 @@ class ApiInterface:
         :return: The entry for the user or
                  None if the user doesn't have such an entry
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def get_list(self, media_type: MediaType, username: str) \
             -> List[MediaListEntry]:
@@ -101,7 +110,7 @@ class ApiInterface:
         :param username: The username for which to fetch the list
         :return: The list of List entries
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def get_anime_data(self, _id: int or Id) \
             -> Optional[AnimeData]:

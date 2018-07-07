@@ -20,8 +20,9 @@ LICENSE"""
 import time
 import json
 import requests
+import logging
 from typing import List, Dict, Tuple, Optional, Any
-from anime_list_apis.cache.Cacher import Cacher
+from anime_list_apis.cache.Cache import Cache
 from anime_list_apis.api.ApiInterface import ApiInterface
 from anime_list_apis.models.MediaData import MediaData
 from anime_list_apis.models.MediaListEntry import MediaListEntry
@@ -103,13 +104,16 @@ class AnilistApi(ApiInterface):
     The query for a media list entry
     """
 
-    def __init__(self, cache: Cacher = None):
+    def __init__(self, cache: Cache = None, rate_limit_pause: float = 0.5):
         """
         Initializes the Anilist Api interface.
         Intializes cache or uses the one provided.
         :param cache: The cache to use. If left as None, will use default cache
+        :param rate_limit_pause: A duration in seconds that the API Interface
+                                 will pause after a network operation to
+                                 prevent being rate limited
         """
-        super().__init__(IdType.ANILIST, cache)
+        super().__init__(IdType.ANILIST, cache, rate_limit_pause)
 
     def _get_data(
             self,
@@ -260,6 +264,8 @@ class AnilistApi(ApiInterface):
                 }
             }
         """
+        if mal_id is None:
+            return None
         variables = {"mal_id": mal_id, "type": media_type.name}
         result = self.__graphql_query(query, variables)
         if result is None:
@@ -374,8 +380,7 @@ class AnilistApi(ApiInterface):
 
         return MediaData.deserialize(serialized)
 
-    @staticmethod
-    def __graphql_query(query: str, variables: Dict[str, Any]) \
+    def __graphql_query(self, query: str, variables: Dict[str, Any]) \
             -> Optional[Dict[str, Any]]:
         """
         Executes a GraphQL query on the anilist API
@@ -387,12 +392,20 @@ class AnilistApi(ApiInterface):
         response = requests.post(
             url, json={'query': query, 'variables': variables}
         )
-        time.sleep(0.5)  # For rate limiting
+        time.sleep(self.rate_limit_pause)  # For rate limiting
         result = json.loads(response.text)
-        print(result)
 
         if "errors" in result:
-            return None
+            if result["errors"][0]["message"] == \
+                    "Too Many Requests.":  # pragma: no cover
+                logging.getLogger(__name__).warning(
+                    "Rate limited on anilist. "
+                    "Waiting for 70 seconds before retrying"
+                )
+                time.sleep(70)
+                return self.__graphql_query(query, variables)
+            else:
+                return None
         else:
             return result["data"]
 
@@ -408,8 +421,8 @@ class AnilistApi(ApiInterface):
         :return: A tuple consisting of the ID and the IDs type
         """
         if not isinstance(_id, int):
-            mal_id = _id.get(IdType.MYANIMELIST)
-            anilist_id = _id.get(IdType.ANILIST)
+            mal_id = _id.get_media_data(IdType.MYANIMELIST)
+            anilist_id = _id.get_media_data(IdType.ANILIST)
         else:
             mal_id = None
             anilist_id = _id

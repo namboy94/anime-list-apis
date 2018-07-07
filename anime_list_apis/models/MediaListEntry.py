@@ -83,7 +83,7 @@ class MediaListEntry(Serializable):
         Checks if the data has a valid combination of entry data
         :return: True, if all required attributes are valid and present
         """
-        score_zero = self.score.get(ScoreType.PERCENTAGE) == 0
+        score_zero = self.score.get_media_data(ScoreType.PERCENTAGE) == 0
         begin_none = self.consuming_start is None
         complete_none = self.consuming_end is None
         consuming_complete = self.consuming_status == ConsumingStatus.COMPLETED

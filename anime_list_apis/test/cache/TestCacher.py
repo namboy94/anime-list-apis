@@ -20,7 +20,7 @@ LICENSE"""
 import os
 import shutil
 from unittest import TestCase
-from anime_list_apis.cache.Cacher import Cacher
+from anime_list_apis.cache.Cache import Cache
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Id import IdType
 from anime_list_apis.test.models.TestMediaData import TestMediaData
@@ -38,7 +38,7 @@ class TestCacher(TestCase):
         """
         self.tearDown()
         os.makedirs("testdir")
-        self.cache = Cacher("testdir/.cache")
+        self.cache = Cache("testdir/.cache")
 
     def tearDown(self):
         """
@@ -53,7 +53,7 @@ class TestCacher(TestCase):
         Tests creating a new cache in a custom location
         :return: None
         """
-        Cacher("testdir/testcache")
+        Cache("testdir/testcache")
         self.assertTrue(os.path.isdir("testdir/testcache"))
         self.assertTrue(os.path.isfile("testdir/testcache/cache.json"))
 
@@ -65,14 +65,14 @@ class TestCacher(TestCase):
         """
         entry = TestMediaData.generate_sample_anime_data()
         _id = entry.id
-        self.cache.add(IdType.MYANIMELIST, entry)
+        self.cache.add_media_data(IdType.MYANIMELIST, entry)
         self.cache.write()
-        new_cache = Cacher("testdir/.cache")
+        new_cache = Cache("testdir/.cache")
         self.assertEqual(
-            entry, self.cache.get(MediaType.ANIME, IdType.MYANIMELIST, _id)
+            entry, self.cache.get_media_data(MediaType.ANIME, IdType.MYANIMELIST, _id)
         )
         self.assertEqual(
-            entry, new_cache.get(MediaType.ANIME, IdType.MYANIMELIST, _id)
+            entry, new_cache.get_media_data(MediaType.ANIME, IdType.MYANIMELIST, _id)
         )
 
     def test_retrieving_non_existant_entry(self):
@@ -81,7 +81,7 @@ class TestCacher(TestCase):
         :return: None
         """
         self.assertEqual(
-            self.cache.get(MediaType.ANIME, IdType.ANILIST, 1),
+            self.cache.get_media_data(MediaType.ANIME, IdType.ANILIST, 1),
             None
         )
 
@@ -92,11 +92,11 @@ class TestCacher(TestCase):
         """
         entry = TestMediaData.generate_sample_anime_data()
         id_obj = entry.id
-        id_int = id_obj.get(IdType.MYANIMELIST)
+        id_int = id_obj.get_media_data(IdType.MYANIMELIST)
 
-        self.cache.add(IdType.MYANIMELIST, entry)
+        self.cache.add_media_data(IdType.MYANIMELIST, entry)
 
         self.assertEqual(
-            self.cache.get(MediaType.ANIME, IdType.MYANIMELIST, id_int),
-            self.cache.get(MediaType.ANIME, IdType.MYANIMELIST, id_obj)
+            self.cache.get_media_data(MediaType.ANIME, IdType.MYANIMELIST, id_int),
+            self.cache.get_media_data(MediaType.ANIME, IdType.MYANIMELIST, id_obj)
         )

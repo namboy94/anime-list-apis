@@ -28,38 +28,38 @@ from anime_list_apis.models.attributes.Relation import Relation
 from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 
 
-class AnimeData(Serializable):
+class MediaData(Serializable):
     """
-    Class that models user-independent anime data
+    Class that models user-independent media data
     """
 
     def __init__(
             self,
+            media_type: MediaType,
             _id: Id,
             title: Title,
             relations: List[Relation],
             releasing_status: ReleasingStatus,
             releasing_start: Optional[Date],
             releasing_end: Optional[Date],
-            episode_count: Optional[int],
-            episode_duration: Optional[int],
             cover_url: Optional[str]
     ):
         """
-        Initializes the Anime Data object and checks for type issues
-        Some values may be None, for example if a show has not yet completed
-        airing.
-        :param _id: The ID of the anime
-        :param title: The title of the anime
-        :param relations: The relations of the anime
-        :param releasing_status: The airing status of the anime
-        :param releasing_start: The day the anime started airing
-        :param releasing_end: The day the last episode aired
-        :param episode_count: The amount of episodes of the anime
-        :param episode_duration: The duration of the episodes in minutes
+        Initializes the Media Data object and checks for type issues
+        Some values may be None, for example if a media has not completed
+        releasing yet.
+        This constructor initializes all common values of all media types.
+        :param media_type: The type of media
+        :param _id: The ID of the media
+        :param title: The title of the media
+        :param relations: The relations of the media to other media
+        :param releasing_status: The releasing status of the media
+        :param releasing_start: The day the media started releasing
+        :param releasing_end: The day the last content was released
         :param cover_url: An URL pointing to a cover image for the anime
         :raises TypeError: If any of the parameters has a wrong type
         """
+        self.ensure_type(media_type, MediaType)
         self.ensure_type(_id, Id)
         self.ensure_type(title, Title)
         self.ensure_type(relations, list)
@@ -67,20 +67,16 @@ class AnimeData(Serializable):
         self.ensure_type(releasing_status, ReleasingStatus)
         self.ensure_type(releasing_start, Date, True)
         self.ensure_type(releasing_end, Date, True)
-        self.ensure_type(episode_count, int, True)
-        self.ensure_type(episode_duration, int, True)
         self.ensure_type(cover_url, str, True)
 
-        self.media_type = MediaType.ANIME
+        self.media_type = media_type
         self.id = _id
         self.title = title
         self.relations = relations
         self.releasing_status = releasing_status
-        self.releasing_start = releasing_start  # type: Date
-        self.releasing_end = releasing_end  # type: Date
-        self.episode_count = episode_count  # type: int
-        self.episode_duration = episode_duration  # type: int
-        self.cover_url = cover_url  # type: str
+        self.releasing_start = releasing_start
+        self.releasing_end = releasing_end
+        self.cover_url = cover_url
 
     def _serialize(self) -> Dict[str, Optional[str or int or float or bool
                                  or Dict or List or Tuple or Set]]:
@@ -88,32 +84,88 @@ class AnimeData(Serializable):
         Serializes the object into a dictionary
         :return: The serialized form of this object
         """
+        releasing_start = None if self.releasing_start is None \
+            else self.releasing_start.serialize()
+        releasing_end = None if self.releasing_end is None \
+            else self.releasing_end.serialize()
+
         return {
+            "media_type": self.media_type.name,
             "id": self.id.serialize(),
             "title": self.title.serialize(),
             "relations": list(map(lambda x: x.serialize(), self.relations)),
             "releasing_status": self.releasing_status.name,
-            "releasing_start": self.__get_serialized(self.releasing_start),
-            "releasing_end": self.__get_serialized(self.releasing_end),
-            "episode_count": self.episode_count,
-            "episode_duration": self.episode_duration,
+            "releasing_start": releasing_start,
+            "releasing_end": releasing_end,
             "cover_url": self.cover_url
         }
 
-    @staticmethod
-    def __get_serialized(to_serialize: Optional[Serializable]) \
-            -> None or Dict[str, Optional[str or int or float or bool
-                            or Dict or List or Tuple or Set]]:
+    @classmethod
+    def _get_common_deserialized_components(
+            cls,
+            data: Dict[str, Optional[str or int or float or bool or
+                                     Dict or List or Tuple or Set]]) \
+            -> Dict[str, Optional[str or int or float or bool or
+                                  Dict or List or Tuple or Set]]:
         """
-        Checks if a serializable object is None or not and returns either
-        None or the serialized dictionary accordingly
-        :param to_serialize: The object to serialize
-        :return: The serialized dictionary or None if the object is None
+        Deserializes the common child components of the data dictionary
+        :param data: The data to deserialize
+        :return: The deserialized dictionary
         """
-        if to_serialize is None:
-            return None
-        else:
-            return to_serialize.serialize()
+        deserialized = {
+            "media_type": MediaType[data["media_type"]],
+            "id": Id.deserialize(data["id"]),
+            "title": Title.deserialize(data["title"]),
+            "relations": list(map(
+                lambda x: Relation.deserialize(x),
+                data["relations"]
+            )),
+            "releasing_status": ReleasingStatus[data["releasing_status"]],
+            "cover_url": data["cover_url"]
+        }
+
+        for date in ["releasing_start", "releasing_end"]:
+            date_data = data[date]
+            if date_data is not None:
+                deserialized[date] = Date.deserialize(date_data)
+            else:
+                deserialized[date] = None
+
+        return deserialized
+
+    @classmethod
+    def _get_specific_deserialized_components(
+            cls,
+            data: Dict[str, Optional[str or int or float or bool or
+                                     Dict or List or Tuple or Set]]) \
+            -> Dict[str, Optional[str or int or float or bool or
+                                  Dict or List or Tuple or Set]]:
+        """
+        Deserializes class-specific child components of the data dictionary
+        :param data: The data to deserialize
+        :return: The deserialized dictionary
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_common_parameter_order(cls) -> List[str]:
+        """
+        Generates an order of constructor parameters for the common attributes
+        used for media classes
+        :return: The order of common parameters
+        """
+        return [
+            "id", "title", "relations", "releasing_status", "releasing_start",
+            "releasing_end", "cover_url"
+        ]
+
+    @classmethod
+    def _get_additional_parameter_order(cls) -> List[str]:
+        """
+        Generates the order of class-specific additional constructor parameters
+        :return: The order of the additional parameters
+        """
+        raise NotImplementedError()
 
     @classmethod
     def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
@@ -125,23 +177,190 @@ class AnimeData(Serializable):
         :raises TypeError: If a type error occurred
         :raises ValueError: If the data could not be deserialized
         """
-        data = deepcopy(data)
-        # Deserialize sub-parts
-        data["id"] = Id.deserialize(data["id"])
-        data["title"] = Title.deserialize(data["title"])
-        data["relations"] = list(map(
-            lambda x: Relation.deserialize(x),
-            data["relations"]
-        ))
-        data["releasing_status"] = ReleasingStatus[data["releasing_status"]]
-        for date in ["releasing_start", "releasing_end"]:
-            date_data = data[date]
-            if date_data is not None:
-                data[date] = Date.deserialize(date_data)
+        data = deepcopy(data)  # To make sure not to change the original data
 
-        order = [
-            "id", "title", "relations", "releasing_status", "releasing_start",
-            "releasing_end", "episode_count", "episode_duration", "cover_url"
-        ]
-        params = tuple(map(lambda x: data[x], order))
-        return cls(*params)  # type: AnimeData
+        # Auto-resolve the MediaData subclass to use
+        media_cls = AnimeData \
+            if MediaType[data["media_type"]] == MediaType.ANIME \
+            else MangaData
+
+        deserialized_data = \
+            media_cls._get_common_deserialized_components(data)
+        # noinspection PyProtectedMember
+        specific_deserialized_data = \
+            media_cls._get_specific_deserialized_components(data)
+
+        for key, value in specific_deserialized_data.items():
+            deserialized_data[key] = value
+
+        # noinspection PyProtectedMember
+        parameter_order = \
+            media_cls._get_common_parameter_order() + \
+            media_cls._get_additional_parameter_order()
+
+        params = tuple(map(lambda x: deserialized_data[x], parameter_order))
+        return media_cls(*params)  # type: type(media_cls)
+
+
+class AnimeData(MediaData):
+    """
+    Class that models anime data
+    """
+
+    def __init__(
+            self,
+            _id: Id,
+            title: Title,
+            relations: List[Relation],
+            releasing_status: ReleasingStatus,
+            releasing_start: Optional[Date],
+            releasing_end: Optional[Date],
+            cover_url: Optional[str],
+            episode_count: Optional[int],
+            episode_duration: Optional[int],
+    ):
+        """
+        Initializes the Anime Data object and checks for type issues
+        :param _id: The ID of the anime
+        :param title: The title of the anime
+        :param relations: The relations of the anime
+        :param releasing_status: The airing status of the anime
+        :param releasing_start: The day the anime started airing
+        :param releasing_end: The day the last episode aired
+        :param episode_count: The amount of episodes of the anime
+        :param episode_duration: The duration of the episodes in minutes
+        :param cover_url: An URL pointing to a cover image for the anime
+        :raises TypeError: If any of the parameters has a wrong type
+        """
+        super().__init__(
+            MediaType.ANIME,
+            _id,
+            title,
+            relations,
+            releasing_status,
+            releasing_start,
+            releasing_end,
+            cover_url
+        )
+        self.ensure_type(episode_count, int, True)
+        self.ensure_type(episode_duration, int, True)
+        self.episode_count = episode_count
+        self.episode_duration = episode_duration
+
+    def _serialize(self) -> Dict[str, Optional[str or int or float or bool
+                                 or Dict or List or Tuple or Set]]:
+        """
+        Serializes the object into a dictionary
+        :return: The serialized form of this object
+        """
+        data = super()._serialize()
+        data["episode_count"] = self.episode_count
+        data["episode_duration"] = self.episode_duration
+        return data
+
+    @classmethod
+    def _get_specific_deserialized_components(
+            cls,
+            data: Dict[str, Optional[str or int or float or bool or
+                                     Dict or List or Tuple or Set]]) \
+            -> Dict[str, Optional[str or int or float or bool or
+                                  Dict or List or Tuple or Set]]:
+        """
+        Deserializes class-specific child components of the data dictionary
+        :param data: The data to deserialize
+        :return: The deserialized dictionary
+        """
+        return {
+            "episode_count": data["episode_count"],
+            "episode_duration": data["episode_duration"]
+        }
+
+    @classmethod
+    def _get_additional_parameter_order(cls) -> List[str]:
+        """
+        Generates the order of class-specific additional constructor parameters
+        :return: The order of the additional parameters
+        """
+        return ["episode_count", "episode_duration"]
+
+
+class MangaData(MediaData):
+    """
+    Class that models manga data
+    """
+
+    def __init__(
+            self,
+            _id: Id,
+            title: Title,
+            relations: List[Relation],
+            releasing_status: ReleasingStatus,
+            releasing_start: Optional[Date],
+            releasing_end: Optional[Date],
+            cover_url: Optional[str],
+            chapter_count: Optional[int],
+            volume_count: Optional[int],
+    ):
+        """
+        Initializes the Manga Data object and checks for type issues
+        :param _id: The ID of the manga
+        :param title: The title of the manga
+        :param relations: The relations of the manga
+        :param releasing_status: The releasing status of the manga
+        :param releasing_start: The day the manga started releasing
+        :param releasing_end: The day the last chapter/volume released
+        :param chapter_count: The total amount of chapters of this manga
+        :param volume_count: The total amount of volumes of this manga
+        :param cover_url: An URL pointing to a cover image for the manga
+        :raises TypeError: If any of the parameters has a wrong type
+        """
+        super().__init__(
+            MediaType.MANGA,
+            _id,
+            title,
+            relations,
+            releasing_status,
+            releasing_start,
+            releasing_end,
+            cover_url
+        )
+        self.ensure_type(chapter_count, int, True)
+        self.ensure_type(volume_count, int, True)
+        self.chapter_count = chapter_count
+        self.volume_count = volume_count
+
+    def _serialize(self) -> Dict[str, Optional[str or int or float or bool
+                                 or Dict or List or Tuple or Set]]:
+        """
+        Serializes the object into a dictionary
+        :return: The serialized form of this object
+        """
+        data = super()._serialize()
+        data["chapter_count"] = self.chapter_count
+        data["volume_count"] = self.volume_count
+        return data
+
+    @classmethod
+    def _get_specific_deserialized_components(
+            cls,
+            data: Dict[str, Optional[str or int or float or bool or
+                                     Dict or List or Tuple or Set]]) \
+            -> Dict[str, Optional[str or int or float or bool or
+                                  Dict or List or Tuple or Set]]:
+        """
+        Deserializes class-specific child components of the data dictionary
+        :param data: The data to deserialize
+        :return: The deserialized dictionary
+        """
+        return {
+            "chapter_count": data["chapter_count"],
+            "volume_count": data["volume_count"]
+        }
+
+    @classmethod
+    def _get_additional_parameter_order(cls) -> List[str]:
+        """
+        Generates the order of class-specific additional constructor parameters
+        :return: The order of the additional parameters
+        """
+        return ["chapter_count", "volume_count"]

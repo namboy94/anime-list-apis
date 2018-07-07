@@ -47,15 +47,17 @@ class TestMediaData(TestCase):
             Title({TitleType.ROMAJI: "Test"}),
             [Relation(
                 Id({IdType.MYANIMELIST: 1}),
+                MediaType.ANIME,
                 Id({IdType.MYANIMELIST: 2}),
+                MediaType.MANGA,
                 RelationType.SEQUEL
             )],
             ReleasingStatus.FINISHED,
             Date(2018, 1, 1),
             Date(2018, 4, 4),
+            "https://example.com/image.png",
             12,
             25,
-            "https://example.com/image.png"
         )
 
     @staticmethod
@@ -69,15 +71,17 @@ class TestMediaData(TestCase):
             Title({TitleType.ROMAJI: "Test"}),
             [Relation(
                 Id({IdType.MYANIMELIST: 1}),
+                MediaType.MANGA,
                 Id({IdType.MYANIMELIST: 2}),
+                MediaType.MANGA,
                 RelationType.SEQUEL
             )],
             ReleasingStatus.FINISHED,
             Date(2018, 1, 1),
             Date(2018, 4, 4),
+            "https://example.com/image.png",
             100,
-            10,
-            "https://example.com/image.png"
+            10
         )
 
     @staticmethod
@@ -95,7 +99,9 @@ class TestMediaData(TestCase):
             "relations": [
                 Relation(
                     Id({IdType.MYANIMELIST: 1}),
+                    MediaType.ANIME,
                     Id({IdType.MYANIMELIST: 2}),
+                    MediaType.MANGA,
                     RelationType.SEQUEL
                 ).serialize()
             ],
@@ -122,7 +128,9 @@ class TestMediaData(TestCase):
             "relations": [
                 Relation(
                     Id({IdType.MYANIMELIST: 1}),
+                    MediaType.MANGA,
                     Id({IdType.MYANIMELIST: 2}),
+                    MediaType.MANGA,
                     RelationType.SEQUEL
                 ).serialize()
             ],
@@ -146,7 +154,9 @@ class TestMediaData(TestCase):
             data.relations,
             [Relation(
                 Id({IdType.MYANIMELIST: 1}),
+                MediaType.ANIME,
                 Id({IdType.MYANIMELIST: 2}),
+                MediaType.MANGA,
                 RelationType.SEQUEL
             )]
         )
@@ -170,7 +180,9 @@ class TestMediaData(TestCase):
             data.relations,
             [Relation(
                 Id({IdType.MYANIMELIST: 1}),
+                MediaType.MANGA,
                 Id({IdType.MYANIMELIST: 2}),
+                MediaType.MANGA,
                 RelationType.SEQUEL
             )]
         )

@@ -21,6 +21,7 @@ from enum import Enum
 from typing import Dict, List, Tuple, Set, Optional
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.Id import Id
+from anime_list_apis.models.attributes.MediaType import MediaType
 
 
 class RelationType(Enum):
@@ -45,24 +46,39 @@ class Relation(Serializable):
     Class that models a relation edge between two anime entries
     """
 
-    def __init__(self, source: Id, dest: Id, relation_type: RelationType):
+    def __init__(
+            self,
+            source: Id,
+            source_type: MediaType,
+            dest: Id,
+            dest_type: MediaType,
+            relation_type: RelationType
+    ):
         """
         Initializes the Relation object.
         :param source: The source node in the relation edge
+        :param source_type: The media type of the source node
         :param dest: The destination node in the relation edge
+        :param dest_type: The destination node's media type
         :param relation_type: The type of the relation
         :raises TypeError: If invalid ID types are provided
                            or other types mismatch
         :raises ValueError: If both IDs are the same, i.e. an invalid relation
         """
         list(map(lambda x: self.ensure_type(x, Id), [source, dest]))
+        list(map(
+            lambda x: self.ensure_type(x, MediaType), [source_type, dest_type]
+        ))
         self.ensure_type(relation_type, RelationType)
 
-        if source == dest:
+        if source == dest and source_type == dest_type:
             raise ValueError("Same ID")
 
         self.source, self.dest, self.type = source, dest, relation_type
-        self.id = self.dest  # For easier access
+        self.source_type, self.dest_type = source_type, dest_type
+
+        # For easier access
+        self.id, self.media_type = self.dest, self.dest_type
 
     def is_important(self) -> bool:
         """
@@ -71,7 +87,7 @@ class Relation(Serializable):
         :return: True if the relation is important, False otherwise
         """
         # noinspection PyTypeChecker
-        return 200 > self.type.value
+        return 200 > self.type.value and self.source_type == self.dest_type
 
     def _serialize(self) -> Dict[str, Optional[str or int or float or bool
                                  or Dict or List or Tuple or Set]]:
@@ -81,7 +97,9 @@ class Relation(Serializable):
         """
         return {
             "source": self.source.serialize(),
+            "source_type": self.source_type.name,
             "dest": self.dest.serialize(),
+            "dest_type": self.dest_type.name,
             "type": self.type.name
         }
 
@@ -96,7 +114,11 @@ class Relation(Serializable):
         :raises ValueError: If the data could not be deserialized
         """
         source = Id.deserialize(data["source"])
+        source_type = MediaType[data["source_type"]]
         dest = Id.deserialize(data["dest"])
+        dest_type = MediaType[data["dest_type"]]
         relation_type = RelationType[data["type"]]
-        generated = cls(source, dest, relation_type)  # type: Relation
+        generated = cls(
+            source, source_type, dest, dest_type, relation_type
+        )  # type: Relation
         return generated

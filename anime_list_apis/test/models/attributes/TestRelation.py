@@ -19,6 +19,8 @@ LICENSE"""
 
 import json
 from unittest import TestCase
+
+from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.Id import Id, IdType
 
@@ -36,12 +38,17 @@ class TestRelation(TestCase):
         source = Id({IdType.MYANIMELIST: 1})
         dest = Id({IdType.MYANIMELIST: 2})
         for parameters in [
-            (None, dest, RelationType.SEQUEL),
-            (source, None, RelationType.SEQUEL),
-            (source, dest, None),
-            (1, 2, RelationType.SEQUEL),
-            (True, False, RelationType.SEQUEL),
-            (source, dest, "SEQUEL")
+            (None, MediaType.ANIME, dest, MediaType.ANIME,
+             RelationType.SEQUEL),
+            (source, MediaType.ANIME, None, MediaType.ANIME,
+             RelationType.SEQUEL),
+            (source, MediaType.ANIME, dest, MediaType.ANIME, None),
+            (1, MediaType.ANIME, 2, MediaType.ANIME, RelationType.SEQUEL),
+            (True, MediaType.ANIME, False, MediaType.ANIME,
+             RelationType.SEQUEL),
+            (source, MediaType.ANIME, dest, MediaType.ANIME, "SEQUEL"),
+            (source, "ANIME", dest, MediaType.ANIME, RelationType.SEQUEL),
+            (source, MediaType.ANIME, dest, "MANGA", RelationType.SEQUEL)
         ]:
             try:
                 Relation(*parameters)
@@ -67,8 +74,14 @@ class TestRelation(TestCase):
             RelationType.ADAPTATION: False,
             RelationType.OTHER: False
         }.items():
-            relation = Relation(source, dest, relation_type)
-            self.assertEqual(relation.is_important(), important)
+            same_type_relation = Relation(
+                source, MediaType.ANIME, dest, MediaType.ANIME, relation_type
+            )
+            self.assertEqual(same_type_relation.is_important(), important)
+            other_type_relation = Relation(
+                source, MediaType.ANIME, dest, MediaType.MANGA, relation_type
+            )
+            self.assertFalse(other_type_relation.is_important())
 
     def test_using_same_ids(self):
         """
@@ -76,12 +89,22 @@ class TestRelation(TestCase):
         destination results in an error
         :return: None
         """
+        source = Id({IdType.MYANIMELIST: 1})
         try:
-            source = Id({IdType.MYANIMELIST: 1})
-            Relation(source, source, RelationType.OTHER)
+            Relation(
+                source, MediaType.ANIME,
+                source, MediaType.ANIME,
+                RelationType.OTHER
+            )
             self.fail()
         except ValueError:
             pass
+
+        Relation(
+            source, MediaType.ANIME,
+            source, MediaType.MANGA,
+            RelationType.OTHER
+        )
 
     def test_serialization(self):
         """
@@ -90,14 +113,18 @@ class TestRelation(TestCase):
         """
         source = Id({IdType.MYANIMELIST: 1})
         dest = Id({IdType.MYANIMELIST: 2})
-        ob = Relation(source, dest, RelationType.SEQUEL)
+        ob = Relation(
+            source, MediaType.ANIME, dest, MediaType.MANGA, RelationType.SEQUEL
+        )
         data = ob.serialize()
 
         self.assertEqual(
             data,
             {
                 "source": source.serialize(),
+                "source_type": "ANIME",
                 "dest": dest.serialize(),
+                "dest_type": "MANGA",
                 "type": "SEQUEL"
             }
         )
@@ -111,12 +138,18 @@ class TestRelation(TestCase):
         dest = Id({IdType.MYANIMELIST: 2})
         data = {
             "source": source.serialize(),
+            "source_type": "ANIME",
             "dest": dest.serialize(),
+            "dest_type": "MANGA",
             "type": "SEQUEL"
         }
         self.assertEqual(
             Relation.deserialize(data),
-            Relation(source, dest, RelationType.SEQUEL)
+            Relation(
+                source, MediaType.ANIME,
+                dest, MediaType.MANGA,
+                RelationType.SEQUEL
+            )
         )
 
     def test_invalid_deserialization(self):
@@ -127,14 +160,23 @@ class TestRelation(TestCase):
         source = Id({IdType.MYANIMELIST: 1}).serialize()
         dest = Id({IdType.MYANIMELIST: 2}).serialize()
         for data in [
+            {"source": source, "dest": dest, "type": "Sequel",
+             "source_type": "ANIME", "dest_type": "MANGA"},
+            {"source": source, "dest": None, "type": "SEQUEL",
+             "source_type": "ANIME", "dest_type": "MANGA"},
+            {"source": None, "dest": dest, "type": "SEQUEL",
+             "source_type": "ANIME", "dest_type": "MANGA"},
+            {"source": source, "dest": dest,
+             "source_type": "ANIME", "dest_type": "MANGA"},
+            {"source": source, "type": "SEQUEL",
+             "source_type": "ANIME", "dest_type": "MANGA"},
+            {"dest": dest, "type": "SEQUEL",
+             "source_type": "ANIME", "dest_type": "MANGA"},
+            {"source": 1, "dest": dest, "type": "Sequel",
+             "source_type": "ANIME", "dest_type": "MANGA"},
+            {"source": source, "dest": 2, "type": "Sequel",
+             "source_type": "ANIME", "dest_type": "MANGA"},
             {"source": source, "dest": dest, "type": "Sequel"},
-            {"source": source, "dest": None, "type": "SEQUEL"},
-            {"source": None, "dest": dest, "type": "SEQUEL"},
-            {"source": source, "dest": dest},
-            {"source": source, "type": "SEQUEL"},
-            {"dest": dest, "type": "SEQUEL"},
-            {"source": 1, "dest": dest, "type": "Sequel"},
-            {"source": source, "dest": 2, "type": "Sequel"},
             []
         ]:
             try:
@@ -152,16 +194,23 @@ class TestRelation(TestCase):
         id_two = Id({IdType.MYANIMELIST: 2})
         id_three = Id({IdType.MYANIMELIST: 3})
 
-        one = Relation(id_one, id_two, RelationType.SEQUEL)
-        two = Relation(id_one, id_two, RelationType.SEQUEL)
-        three = Relation(id_one, id_three, RelationType.SEQUEL)
-        four = Relation(id_one, id_two, RelationType.ADAPTATION)
+        one = Relation(id_one, MediaType.ANIME,
+                       id_two, MediaType.ANIME, RelationType.SEQUEL)
+        two = Relation(id_one, MediaType.ANIME,
+                       id_two, MediaType.ANIME, RelationType.SEQUEL)
+        three = Relation(id_one, MediaType.ANIME,
+                         id_three, MediaType.ANIME, RelationType.SEQUEL)
+        four = Relation(id_one, MediaType.ANIME,
+                        id_two, MediaType.ANIME, RelationType.ADAPTATION)
+        five = Relation(id_one, MediaType.ANIME,
+                        id_two, MediaType.MANGA, RelationType.SEQUEL)
 
         self.assertNotEqual(one, "Test")
         self.assertEqual(one, two)
         self.assertNotEqual(two, three)
         self.assertNotEqual(two, four)
         self.assertNotEqual(three, four)
+        self.assertNotEqual(one, five)
 
     def test_string_representation(self):
         """
@@ -170,7 +219,8 @@ class TestRelation(TestCase):
         """
         source = Id({IdType.MYANIMELIST: 1})
         dest = Id({IdType.MYANIMELIST: 2})
-        relation = Relation(source, dest, RelationType.SEQUEL)
+        relation = Relation(source, MediaType.ANIME,
+                            dest, MediaType.ANIME, RelationType.SEQUEL)
         representation = str(relation)
         serialised = json.loads(representation)
         self.assertEqual(relation, Relation.deserialize(serialised))

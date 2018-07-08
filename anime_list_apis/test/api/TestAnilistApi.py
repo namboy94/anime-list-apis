@@ -50,7 +50,7 @@ class TestAnilistApi(TestCase):
         """
         self.tearDown()
         os.makedirs("testdir")
-        self.cache = Cache("testdir/.cache", expiration=0, write_after=100000)
+        self.cache = Cache("testdir/.cache", expiration=0)  # Discard cached
         self.api = self.api_class(cache=self.cache, rate_limit_pause=0.0)
         self.username = "namboy94"
 
@@ -263,28 +263,37 @@ class TestAnilistApi(TestCase):
         """
         self.api.cache = Cache(self.cache.cache_location)
         for media_type, english, _id in [
-            (MediaType.ANIME, "Cowboy Bebop",
+            (MediaType.ANIME, "Steins;Gate",
              Id({
-                 IdType.MYANIMELIST: 1,
-                 IdType.KITSU: 1,
-                 IdType.ANILIST: 1
+                 IdType.KITSU: 5646,
+                 IdType.MYANIMELIST: 9253,
+                 IdType.ANILIST: 9253
              })),
-            (MediaType.MANGA, "Monster",
+            (MediaType.MANGA, "Spice & Wolf",
              Id({
-                 IdType.MYANIMELIST: 1,
-                 IdType.KITSU: 4,
-                 IdType.ANILIST: 30001
+                 IdType.MYANIMELIST: 9115,
+                 IdType.KITSU: 18471,
+                 IdType.ANILIST: 39115
              }))
         ]:
-
-            fetched = self.api.get_data(media_type, _id)
-            cached = self.api.cache.get_media_data(
+            fetched_entry = self.api.get_list_entry(
+                media_type, _id, self.username
+            )
+            fetched_data = self.api.get_data(media_type, _id)
+            cached_entry = self.api.cache.get_media_list_entry(
+                self.api.id_type, media_type, _id, self.username
+            )
+            cached_data = self.api.cache.get_media_data(
                 self.api.id_type, media_type, _id
             )
             self.assertEqual(
-                fetched.title.get(TitleType.ENGLISH), english
+                fetched_data.title.get(TitleType.ENGLISH), english
             )
-            self.assertEqual(fetched, cached)
+            self.assertEqual(
+                fetched_entry.title.get(TitleType.ENGLISH), english
+            )
+            self.assertEqual(fetched_data, cached_data)
+            self.assertEqual(fetched_entry, cached_entry)
 
             def raise_value_error():
                 raise ValueError()
@@ -292,8 +301,12 @@ class TestAnilistApi(TestCase):
             # Makes sure that cached value is used from now on
             with mock.patch("requests.post", new=raise_value_error):
                 with mock.patch("requests.get", new=raise_value_error):
-                    new_fetched = self.api.get_data(media_type, _id)
-                    self.assertEqual(new_fetched, cached)
+                    new_fetched_data = self.api.get_data(media_type, _id)
+                    new_fetched_entry = self.api.get_list_entry(
+                        media_type, _id, self.username
+                    )
+                    self.assertEqual(new_fetched_data, cached_data)
+                    self.assertEqual(new_fetched_entry, cached_entry)
 
 
 class TestAnilistApiSpecific(TestCase):

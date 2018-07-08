@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-import os
 from setuptools import setup, find_packages
 
 if __name__ == "__main__":

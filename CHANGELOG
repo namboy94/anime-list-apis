@@ -1,2 +1,6 @@
 V 0.1.0:
   - Initial Release
+  - Created models for media data
+  - Created API Interface
+  - Created API Wrapper for anilist.co
+  - Implemented Caching

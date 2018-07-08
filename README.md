@@ -10,6 +10,10 @@ Your one-stop shop for all things anime list APIs!
 
 This project offers a unified interface for various anime list services.
 
+Currently, the following anime list services are implemented:
+
+* [Anilist](https://anilist.co)
+
 ## Further Information
 
 * [Changelog](CHANGELOG)

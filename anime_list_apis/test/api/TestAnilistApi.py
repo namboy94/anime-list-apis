@@ -20,7 +20,6 @@ LICENSE"""
 import os
 import shutil
 from unittest import TestCase, mock
-
 from anime_list_apis.api.AnilistApi import AnilistApi
 from anime_list_apis.cache.Cache import Cache
 from anime_list_apis.models.attributes.Id import Id, IdType
@@ -51,7 +50,7 @@ class TestAnilistApi(TestCase):
         """
         self.tearDown()
         os.makedirs("testdir")
-        self.cache = Cache("testdir/.cache")
+        self.cache = Cache("testdir/.cache", expiration=0, write_after=100000)
         self.api = self.api_class(cache=self.cache, rate_limit_pause=0.0)
         self.username = "namboy94"
 
@@ -89,13 +88,13 @@ class TestAnilistApi(TestCase):
             entries = []
             counter = 0
 
-            for inner_id in [_id, _id.get_media_data(self.api.id_type)]:
+            for inner_id in [_id, _id.get(self.api.id_type)]:
                 entries.append(self.api.get_data(media_type, inner_id))
                 entries.append(get_func(inner_id))
                 counter += 2
 
             for id_type in self.valid_id_types:
-                inner_id = Id({id_type: _id.get_media_data(id_type)})
+                inner_id = Id({id_type: _id.get(id_type)})
 
                 entries.append(self.api.get_data(media_type, inner_id))
                 entries.append(get_func(inner_id))
@@ -105,11 +104,11 @@ class TestAnilistApi(TestCase):
             for entry in entries:
                 self.assertIsNotNone(entry)
                 self.assertEqual(
-                    entry.id.get_media_data(self.api.id_type),
-                    _id.get_media_data(self.api.id_type)
+                    entry.id.get(self.api.id_type),
+                    _id.get(self.api.id_type)
                 )
                 self.assertEqual(
-                    entry.title.get_media_data(TitleType.ENGLISH),
+                    entry.title.get(TitleType.ENGLISH),
                     english
                 )
                 for compared in entries:
@@ -150,7 +149,7 @@ class TestAnilistApi(TestCase):
             entries = []
             counter = 0
 
-            for inner_id in [_id, _id.get_media_data(self.api.id_type)]:
+            for inner_id in [_id, _id.get(self.api.id_type)]:
                 entries.append(self.api.get_list_entry(
                     media_type, inner_id, self.username
                 ))
@@ -158,7 +157,7 @@ class TestAnilistApi(TestCase):
                 counter += 2
 
             for id_type in self.valid_id_types:
-                inner_id = Id({id_type: _id.get_media_data(id_type)})
+                inner_id = Id({id_type: _id.get(id_type)})
 
                 entries.append(self.api.get_list_entry(
                     media_type, inner_id, self.username
@@ -171,11 +170,11 @@ class TestAnilistApi(TestCase):
                 self.assertIsNotNone(entry)
                 self.assertEqual(self.username, entry.username)
                 self.assertEqual(
-                    entry.id.get_media_data(self.api.id_type),
-                    _id.get_media_data(self.api.id_type)
+                    entry.id.get(self.api.id_type),
+                    _id.get(self.api.id_type)
                 )
                 self.assertEqual(
-                    entry.title.get_media_data(TitleType.ENGLISH),
+                    entry.title.get(TitleType.ENGLISH),
                     english
                 )
                 for compared in entries:
@@ -238,40 +237,6 @@ class TestAnilistApi(TestCase):
         self.assertEqual([], self.api.get_anime_list(""))
         self.assertEqual([], self.api.get_manga_list(""))
 
-    def test_caching_anime(self):
-        """
-        Tests that the caching works correctly for media data
-        :return: None
-        """
-        for media_type, english, _id in [
-            (MediaType.ANIME, "Cowboy Bebop",
-             Id({
-                 IdType.MYANIMELIST: 1,
-                 IdType.KITSU: 1,
-                 IdType.ANILIST: 1
-             })),
-            (MediaType.MANGA, "Monster",
-             Id({
-                 IdType.MYANIMELIST: 1,
-                 IdType.KITSU: 4,
-                 IdType.ANILIST: 30001
-             }))
-        ]:
-
-            fetched = self.api.get_data(media_type, _id)
-            cached = self.cache.get_media_data(media_type, self.api.id_type, _id)
-            self.assertEqual(fetched.title.get_media_data(TitleType.ENGLISH), english)
-            self.assertEqual(fetched, cached)
-
-            def raise_value_error():
-                raise ValueError()
-
-            # Makes sure that cached value is used from now on
-            with mock.patch("requests.post", new=raise_value_error):
-                with mock.patch("requests.get", new=raise_value_error):
-                    new_fetched = self.api.get_data(media_type, _id)
-                    self.assertEqual(new_fetched, cached)
-
     def test_fetching_with_invalid_id_type(self):
         """
         Makes sure that trying to use an unsupported ID type results in
@@ -290,6 +255,45 @@ class TestAnilistApi(TestCase):
                     self.assertIsNone(
                         self.api.get_data(media_type, _id)
                     )
+
+    def test_caching_anime(self):
+        """
+        Tests that the caching works correctly for media data
+        :return: None
+        """
+        self.api.cache = Cache(self.cache.cache_location)
+        for media_type, english, _id in [
+            (MediaType.ANIME, "Cowboy Bebop",
+             Id({
+                 IdType.MYANIMELIST: 1,
+                 IdType.KITSU: 1,
+                 IdType.ANILIST: 1
+             })),
+            (MediaType.MANGA, "Monster",
+             Id({
+                 IdType.MYANIMELIST: 1,
+                 IdType.KITSU: 4,
+                 IdType.ANILIST: 30001
+             }))
+        ]:
+
+            fetched = self.api.get_data(media_type, _id)
+            cached = self.api.cache.get_media_data(
+                self.api.id_type, media_type, _id
+            )
+            self.assertEqual(
+                fetched.title.get(TitleType.ENGLISH), english
+            )
+            self.assertEqual(fetched, cached)
+
+            def raise_value_error():
+                raise ValueError()
+
+            # Makes sure that cached value is used from now on
+            with mock.patch("requests.post", new=raise_value_error):
+                with mock.patch("requests.get", new=raise_value_error):
+                    new_fetched = self.api.get_data(media_type, _id)
+                    self.assertEqual(new_fetched, cached)
 
 
 class TestAnilistApiSpecific(TestCase):
@@ -325,11 +329,11 @@ class TestAnilistApiSpecific(TestCase):
         """
         steins_gate = self.api.get_anime_data(9253)
         self.assertEqual(
-            steins_gate.title.get_media_data(TitleType.ROMAJI),
-            steins_gate.title.get_media_data(TitleType.ENGLISH),
+            steins_gate.title.get(TitleType.ROMAJI),
+            steins_gate.title.get(TitleType.ENGLISH),
         )
         self.assertEqual(
-            steins_gate.title.get_media_data(TitleType.ROMAJI),
+            steins_gate.title.get(TitleType.ROMAJI),
             "Steins;Gate",
         )
 

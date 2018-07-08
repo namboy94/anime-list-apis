@@ -143,7 +143,8 @@ class Cache:
             CacheType,
             site_type: IdType,
             _id: int or Id,
-            data: MediaData or MediaUserData
+            data: MediaData or MediaUserData,
+            ignore_for_write_count: bool = False
     ):
         """
         Adds a copy of an object to the cache.
@@ -153,6 +154,8 @@ class Cache:
         :param site_type: The site for which to cache it
         :param _id: The ID of the object in the cache
         :param data: The data to cache
+        :param ignore_for_write_count: If set to True, will not increment the
+                                       change_count variable.
         :return: None
         """
         _id = self.__resolve_id(site_type, _id)
@@ -166,7 +169,8 @@ class Cache:
             "timestamp": time.time(),
             "data": deepcopy(data)
         }
-        self.change_count += 1
+        if not ignore_for_write_count:
+            self.change_count += 1
 
         if self.change_count >= self.write_after:
             self.write()
@@ -174,45 +178,70 @@ class Cache:
     def add_media_data(
             self,
             site_type: IdType,
-            data: MediaData
+            data: MediaData,
+            ignore_for_write_count: bool = False
     ):
         """
         Adds a media data object to the cache
         :param site_type: The site for which to add the entry
         :param data: The data object to add
+        :param ignore_for_write_count: If set to True, will not increment the
+                                       change_count variable.
         :return: None
         """
         _id = data.id.get(site_type)
-        self.__add_cached(CacheType.MEDIA_DATA, site_type, _id, data)
+        self.__add_cached(
+            CacheType.MEDIA_DATA,
+            site_type,
+            _id,
+            data,
+            ignore_for_write_count
+        )
 
     def add_media_user_data(
             self,
             site_type: IdType,
             _id: int or Id,
             data: MediaUserData,
+            ignore_for_write_count: bool = False
     ):
         """
         Adds a user data object to the cache
         :param site_type: The type of the site
         :param _id: The ID of the corresponding media data
         :param data: The data to cache
+        :param ignore_for_write_count: If set to True, will not increment the
+                                       change_count variable.
         :return: None
         """
-        self.__add_cached(CacheType.USER_DATA, site_type, _id, data)
+        self.__add_cached(
+            CacheType.USER_DATA,
+            site_type,
+            _id,
+            data,
+            ignore_for_write_count
+        )
 
     def add_media_list_entry(
             self,
             site_type: IdType,
-            data: MediaListEntry
+            data: MediaListEntry,
+            ignore_for_write_count: bool = False
     ):
         """
         Stores a media list entry in the cache
         :param site_type: The site type to store it for
         :param data: The data to store
+        :param ignore_for_write_count: If set to True, will not increment the
+                                       change_count variable.
         :return: None
         """
-        self.add_media_data(site_type, data.get_media_data())
-        self.add_media_user_data(site_type, data.id, data.get_user_data())
+        self.add_media_data(
+            site_type, data.get_media_data(), ignore_for_write_count
+        )
+        self.add_media_user_data(
+            site_type, data.id, data.get_user_data(), ignore_for_write_count
+        )
 
     def __get_cached(
             self,
@@ -384,12 +413,3 @@ class Cache:
         if username is not None:
             tag += "-" + username
         return tag
-
-    @staticmethod
-    def get_id_from_tag(tag: str) -> int:
-        """
-        Parses a tag and retrieves the ID from it
-        :param tag: The tag to parse
-        :return: The ID of the tag
-        """
-        return int(tag.split("-")[1])

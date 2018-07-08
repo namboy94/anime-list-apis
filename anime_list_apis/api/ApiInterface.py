@@ -62,7 +62,7 @@ class ApiInterface:
         :param _id: The ID to retrieve. May be either an int or an Id object
         :return: The Media Data or None if no valid data was found
         """
-        cached = self.cache.get_media_data(media_type, IdType.ANILIST, _id)
+        cached = self.cache.get_media_data(IdType.ANILIST, media_type, _id)
 
         if cached is None:
             cached = self._get_data(media_type, _id)
@@ -93,7 +93,34 @@ class ApiInterface:
             username: str
     ) -> Optional[MediaListEntry]:
         """
-        Retrieves a user list entry
+        Retrieves a user list entry.
+        First checks for cached entries, otherwise fetches from anilist
+        :param media_type: The media type to fetch
+        :param _id: The ID to retrieve. May be and int or an Id object
+        :param username: The user for which to fetch the entry
+        :return: The entry for the user or
+                 None if the user doesn't have such an entry
+        """
+        cached = self.cache.get_media_list_entry(
+            IdType.ANILIST, media_type, _id, username
+        )
+
+        if cached is None:
+            cached = self._get_list_entry(media_type, _id, username)
+
+            if cached is not None:
+                self.cache.add_media_list_entry(IdType.ANILIST, cached)
+
+        return cached
+
+    def _get_list_entry(
+            self,
+            media_type: MediaType,
+            _id: int or Id,
+            username: str
+    ) -> Optional[MediaListEntry]:
+        """
+        Actual implementation of the get_list_entry for each subclass
         :param media_type: The media type to fetch
         :param _id: The ID to retrieve. May be and int or an Id object
         :param username: The user for which to fetch the entry
@@ -106,6 +133,21 @@ class ApiInterface:
             -> List[MediaListEntry]:
         """
         Retrieves a user's entire list
+        Stores all entries in the cache upon completion
+        :param media_type: The media type to fetch
+        :param username: The username for which to fetch the list
+        :return: The list of List entries
+        """
+        entries = self._get_list(media_type, username)
+        for entry in entries:
+            self.cache.add_media_list_entry(IdType.ANILIST, entry, True)
+        return entries
+
+    def _get_list(self, media_type: MediaType, username: str) \
+            -> List[MediaListEntry]:
+        """
+        Retrieves a user's entire list
+        Actual implementation method to be implemented by subclasses
         :param media_type: The media type to fetch
         :param username: The username for which to fetch the list
         :return: The list of List entries

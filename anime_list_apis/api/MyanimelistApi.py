@@ -55,7 +55,7 @@ class MyanimelistApi(ApiInterface):
         """
         raise NotImplementedError()
 
-    def get_list_entry(
+    def _get_list_entry(
             self,
             media_type: MediaType,
             _id: int or Id,
@@ -71,7 +71,7 @@ class MyanimelistApi(ApiInterface):
         """
         raise NotImplementedError()
 
-    def get_list(self, media_type: MediaType, username: str) \
+    def _get_list(self, media_type: MediaType, username: str) \
             -> List[AnimeListEntry]:  # TODO Manga
         """
         Retrieves a user's entire list

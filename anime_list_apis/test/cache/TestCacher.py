@@ -190,28 +190,24 @@ class TestCacher(TestCase):
         self.cache.add_media_user_data(site, ani_id_int, anime)
         self.cache.add_media_user_data(site, man_id_obj, manga)
 
-        print(1)
         self.assertEqual(
             self.cache.get_media_user_data(
                 site, MediaType.ANIME, ani_id_int, anime.username
             ),
             anime
         )
-        print(1)
         self.assertEqual(
             self.cache.get_media_user_data(
                 site, MediaType.ANIME, ani_id_obj, anime.username
             ),
             anime
         )
-        print(1)
         self.assertEqual(
             self.cache.get_media_user_data(
                 site, MediaType.MANGA, man_id_int, manga.username
             ),
             manga
         )
-        print(1)
         self.assertEqual(
             self.cache.get_media_user_data(
                 site, MediaType.MANGA, man_id_obj, manga.username
@@ -296,7 +292,6 @@ class TestCacher(TestCase):
             )
 
         for i in range(1, entry_count):
-            print(i)
             add_and_check(True)
 
         add_and_check(False)

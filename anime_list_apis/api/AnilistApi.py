@@ -148,7 +148,7 @@ class AnilistApi(ApiInterface):
         else:
             return self.__generate_media_data(media_type, data["Media"])
 
-    def get_list_entry(
+    def _get_list_entry(
             self,
             media_type: MediaType,
             _id: int or Id,
@@ -206,7 +206,7 @@ class AnilistApi(ApiInterface):
             entry_cls = MediaListEntry.get_class_for_media_type(media_type)
             return entry_cls(media_data, user_data)
 
-    def get_list(self, media_type: MediaType, username: str) \
+    def _get_list(self, media_type: MediaType, username: str) \
             -> List[MediaListEntry]:
         """
         Retrieves a user's entire list
@@ -421,8 +421,8 @@ class AnilistApi(ApiInterface):
         :return: A tuple consisting of the ID and the IDs type
         """
         if not isinstance(_id, int):
-            mal_id = _id.get_media_data(IdType.MYANIMELIST)
-            anilist_id = _id.get_media_data(IdType.ANILIST)
+            mal_id = _id.get(IdType.MYANIMELIST)
+            anilist_id = _id.get(IdType.ANILIST)
         else:
             mal_id = None
             anilist_id = _id

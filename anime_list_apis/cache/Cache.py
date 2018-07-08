@@ -55,7 +55,8 @@ class Cache:
         they will be created here.
         :param cache_location: The location of the cache. Will default to a
                                hidden directory in the user's home directory
-        :param expiration: Defines how long objects should be valid
+        :param expiration: Defines how long objects should be valid.
+                           If set to a negative number, will be infinite
         :param write_after: Defines after how many cache changes the changes
                             are automatically written to the cache file
         """
@@ -181,7 +182,7 @@ class Cache:
         :param data: The data object to add
         :return: None
         """
-        _id = data.id.get_media_data(site_type)
+        _id = data.id.get(site_type)
         self.__add_cached(CacheType.MEDIA_DATA, site_type, _id, data)
 
     def add_media_user_data(
@@ -238,7 +239,7 @@ class Cache:
             entry = self.__cache[cache_type][site_type][tag]
             timestamp = entry["timestamp"]
 
-            if time.time() - timestamp > self.expiration:
+            if time.time() - timestamp > self.expiration >= 0:
                 self.__cache[cache_type][site_type].pop(tag)
                 return None
             else:

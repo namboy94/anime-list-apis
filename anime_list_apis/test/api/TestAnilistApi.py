@@ -19,11 +19,13 @@ LICENSE"""
 
 import os
 import shutil
+from copy import deepcopy
 from unittest import TestCase, mock
 from anime_list_apis.api.AnilistApi import AnilistApi
 from anime_list_apis.cache.Cache import Cache
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
+from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.Title import TitleType
 
 
@@ -64,55 +66,46 @@ class TestAnilistApi(TestCase):
 
     def test_retrieving_data(self):
         """
-        Tests retrieving a single data entry using different methods for
-        both anime and manga.
+        Tests retrieving a data, user data and list entries for both anime
+        and manga
         :return: None
         """
-        for media_type, english, _id, get_func in [
-            (MediaType.ANIME, "Cowboy Bebop",
+        for media_type, english, _id in [
+            (MediaType.ANIME, "Steins;Gate",
              Id({
-                 IdType.MYANIMELIST: 1,
-                 IdType.KITSU: 1,
-                 IdType.ANILIST: 1
-             }),
-             lambda x: self.api.get_anime_data(x)),
-            (MediaType.MANGA, "Monster",
+                 IdType.KITSU: 5646,
+                 IdType.MYANIMELIST: 9253,
+                 IdType.ANILIST: 9253
+             })),
+            (MediaType.MANGA, "Spice & Wolf",
              Id({
-                 IdType.MYANIMELIST: 1,
-                 IdType.KITSU: 4,
-                 IdType.ANILIST: 30001
-             }),
-             lambda x: self.api.get_manga_data(x))
+                 IdType.MYANIMELIST: 9115,
+                 IdType.KITSU: 18471,
+                 IdType.ANILIST: 39115
+             }))
         ]:
+            media_data = self.api.get_data(media_type, _id)
+            user_data = self.api.get_user_data(media_type, _id, self.username)
+            entry = self.api.get_list_entry(media_type, _id, self.username)
 
-            entries = []
-            counter = 0
+            self.assertEqual(
+                media_data.id.get(self.api.id_type),
+                _id.get(self.api.id_type)
+            )
+            self.assertEqual(
+                user_data.id.get(self.api.id_type),
+                _id.get(self.api.id_type)
+            )
+            self.assertEqual(
+                entry.id.get(self.api.id_type),
+                _id.get(self.api.id_type)
+            )
 
-            for inner_id in [_id, _id.get(self.api.id_type)]:
-                entries.append(self.api.get_data(media_type, inner_id))
-                entries.append(get_func(inner_id))
-                counter += 2
+            self.assertEqual(media_data.title.get(TitleType.ENGLISH), english)
+            self.assertEqual(entry.title.get(TitleType.ENGLISH), english)
 
-            for id_type in self.valid_id_types:
-                inner_id = Id({id_type: _id.get(id_type)})
-
-                entries.append(self.api.get_data(media_type, inner_id))
-                entries.append(get_func(inner_id))
-                counter += 2
-
-            self.assertEqual(len(entries), counter)
-            for entry in entries:
-                self.assertIsNotNone(entry)
-                self.assertEqual(
-                    entry.id.get(self.api.id_type),
-                    _id.get(self.api.id_type)
-                )
-                self.assertEqual(
-                    entry.title.get(TitleType.ENGLISH),
-                    english
-                )
-                for compared in entries:
-                    self.assertEqual(entry, compared)
+            self.assertEqual(media_data, entry.get_media_data())
+            self.assertEqual(user_data, entry.get_user_data())
 
     def test_retrieving_invalid_entry(self):
         """
@@ -123,62 +116,6 @@ class TestAnilistApi(TestCase):
         for _id in [-1, 1000000000]:
             self.assertIsNone(self.api.get_anime_data(_id))
             self.assertIsNone(self.api.get_manga_data(_id))
-
-    def test_retrieving_single_list_entry(self):
-        """
-        Tests retrieving a single list entry
-        :return: None
-        """
-        for media_type, english, _id, get_func in [
-            (MediaType.ANIME, "Steins;Gate",
-             Id({
-                IdType.KITSU: 5646,
-                IdType.MYANIMELIST: 9253,
-                IdType.ANILIST: 9253
-             }),
-             lambda x: self.api.get_anime_list_entry(x, self.username)),
-            (MediaType.MANGA, "Spice & Wolf",
-             Id({
-                 IdType.MYANIMELIST: 9115,
-                 IdType.KITSU: 18471,
-                 IdType.ANILIST: 39115
-             }),
-             lambda x: self.api.get_manga_list_entry(x, self.username))
-        ]:
-
-            entries = []
-            counter = 0
-
-            for inner_id in [_id, _id.get(self.api.id_type)]:
-                entries.append(self.api.get_list_entry(
-                    media_type, inner_id, self.username
-                ))
-                entries.append(get_func(inner_id))
-                counter += 2
-
-            for id_type in self.valid_id_types:
-                inner_id = Id({id_type: _id.get(id_type)})
-
-                entries.append(self.api.get_list_entry(
-                    media_type, inner_id, self.username
-                ))
-                entries.append(get_func(inner_id))
-                counter += 2
-
-            self.assertEqual(len(entries), counter)
-            for entry in entries:
-                self.assertIsNotNone(entry)
-                self.assertEqual(self.username, entry.username)
-                self.assertEqual(
-                    entry.id.get(self.api.id_type),
-                    _id.get(self.api.id_type)
-                )
-                self.assertEqual(
-                    entry.title.get(TitleType.ENGLISH),
-                    english
-                )
-                for compared in entries:
-                    self.assertEqual(entry, compared)
 
     def test_retrieving_non_existant_list_entry(self):
         """
@@ -202,12 +139,17 @@ class TestAnilistApi(TestCase):
             self.assertIsNone(self.api.get_list_entry(
                 media_type, _id, self.username
             ))
+            self.assertIsNone(self.api.get_user_data(
+                media_type, _id, self.username
+            ))
 
     def test_retrieving_entry_for_non_existant_user(self):
         """
         Tests retrieving an entry for a non-existant user
         :return: None
         """
+        self.assertIsNone(self.api.get_anime_user_data(1, ""))
+        self.assertIsNone(self.api.get_manga_user_data(1, ""))
         self.assertIsNone(self.api.get_anime_list_entry(1, ""))
         self.assertIsNone(self.api.get_manga_list_entry(1, ""))
 
@@ -216,18 +158,32 @@ class TestAnilistApi(TestCase):
         Tests retrieving a user's lists using various methods
         :return: None
         """
-        for media_type, get_func in {
-            MediaType.ANIME: lambda: self.api.get_anime_list(self.username),
-            MediaType.MANGA: lambda: self.api.get_manga_list(self.username)
-        }.items():
-            normal = self.api.get_list(media_type, self.username)
-            short = get_func()
-            self.assertEqual(normal, short)
-            self.assertLess(1, len(normal))  # At least 2 entries
+        for media_type, list_get_func, user_data_get_func in [
+            (
+                    MediaType.ANIME,
+                    lambda x: self.api.get_anime_list(x),
+                    lambda x: self.api.get_anime_user_data_list(x)
+             ),
+            (
+                    MediaType.MANGA,
+                    lambda x: self.api.get_manga_list(x),
+                    lambda x: self.api.get_manga_user_data_list(x)
+            ),
+        ]:
+            entries = self.api.get_list(media_type, self.username)
+            user_data = self.api.get_user_data_list(media_type, self.username)
 
-            for entry in normal + short:
-                self.assertEqual(entry.media_type, media_type)
-                self.assertEqual(entry.username, self.username)
+            self.assertLess(1, len(entries))  # At least 2 entries
+            self.assertEqual(len(entries), len(user_data))
+
+            for entry in entries:
+                found = False
+                for data in user_data:
+                    found = found or data == entry.get_user_data()
+                self.assertTrue(found)
+
+            self.assertEqual(entries, list_get_func(self.username))
+            self.assertEqual(user_data, user_data_get_func(self.username))
 
     def test_retrieving_list_for_nonexistant_user(self):
         """
@@ -307,6 +263,57 @@ class TestAnilistApi(TestCase):
                     )
                     self.assertEqual(new_fetched_data, cached_data)
                     self.assertEqual(new_fetched_entry, cached_entry)
+
+    def test_getting_fresh_data(self):
+        """
+        Tests retrieving fresh data
+        :return: None
+        """
+        self.api.cache.expiration = 6000
+        _id = Id({
+             IdType.KITSU: 5646,
+             IdType.MYANIMELIST: 9253,
+             IdType.ANILIST: 9253
+         })
+
+        media_data = self.api.get_anime_data(_id)
+        user_data = self.api.get_anime_user_data(_id, self.username)
+        original_media = deepcopy(media_data)
+        original_user = deepcopy(user_data)
+
+        self.assertEqual(
+            self.api.cache.get_media_data(
+                self.api.id_type, MediaType.ANIME, _id
+            ),
+            media_data
+        )
+        self.assertEqual(
+            self.api.cache.get_media_user_data(
+                self.api.id_type, MediaType.ANIME, _id, self.username
+            ),
+            user_data
+        )
+
+        media_data.title.set("Test", TitleType.ENGLISH)
+        user_data.score = Score(0, ScoreType.PERCENTAGE)
+        self.api.cache.add(self.api.id_type, media_data)
+        self.api.cache.add(self.api.id_type, user_data)
+
+        self.assertNotEqual(original_media, media_data)
+        self.assertNotEqual(original_user, user_data)
+
+        self.assertEqual(media_data, self.api.get_anime_data(_id))
+        self.assertEqual(
+            user_data, self.api.get_anime_user_data(_id, self.username)
+        )
+
+        fresh_media = self.api.get_anime_data(_id, True)
+        fresh_user = self.api.get_anime_user_data(_id, self.username, True)
+
+        self.assertNotEqual(fresh_media, media_data)
+        self.assertEqual(fresh_media, original_media)
+        self.assertNotEqual(fresh_user, user_data)
+        self.assertEqual(fresh_user, original_user)
 
 
 class TestAnilistApiSpecific(TestCase):

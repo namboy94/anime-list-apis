@@ -295,3 +295,20 @@ class TestCacher(TestCase):
             self.assertIsNone(self.cache.get_media_list_entry(
                 site, media_type, anime_data.id, manga_user_data.username
             ))
+
+    def test_caching_entry(self):
+        """
+        Tests caching and retrieving a Media List Entry
+        :return: None
+        """
+        entry = TestMediaListEntry.generate_sample_anime_entry()
+        self.cache.add(IdType.MYANIMELIST, entry)
+        self.assertEqual(
+            entry,
+            self.cache.get_media_list_entry(
+                IdType.MYANIMELIST,
+                entry.get_media_type(),
+                entry.get_id(),
+                entry.get_username()
+            )
+        )

@@ -58,25 +58,25 @@ class CacheAble(Serializable):
         Retrieves the cache entry's ID
         :return: The ID
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def get_media_type(self) -> MediaType:
         """
         Retrieves the media type
         :return: The media type
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def get_username(self) -> Optional[str]:
         """
         Retrieves the username, if applicable. Else None
         :return: The username or None if not applicable
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def get_model_type(self) -> CacheModelType:
         """
         Retrieves the cache model type
         :return: The model type
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover

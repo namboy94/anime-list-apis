@@ -117,7 +117,7 @@ class ApiInterface:
         """
         data = self._get_user_data_list(media_type, username)
         for obj in data:
-            self.__cache(obj)
+            self.__cache(obj, dont_write=True)
         return data
 
     def get_list_entry(
@@ -126,7 +126,7 @@ class ApiInterface:
             _id: int or Id,
             username: str,
             fresh: bool = False
-    ) -> Optional[MediaListEntry or MediaUserData]:
+    ) -> Optional[MediaListEntry]:
         """
         Retrieves a user list entry.
         First checks for cached entries, otherwise fetches from anilist
@@ -165,7 +165,7 @@ class ApiInterface:
         """
         entries = self._get_list(media_type, username)
         for entry in entries:
-            self.__cache(entry)
+            self.__cache(entry, dont_write=True)
         return entries
 
     # Abstract Methods --------------------------------------------------------
@@ -189,7 +189,7 @@ class ApiInterface:
             media_type: MediaType,
             _id: Id,
             username: str
-    ) -> Optional[MediaListEntry]:
+    ) -> Optional[MediaUserData]:
         """
         Actual implementation of the get_user_data for each subclass
         :param media_type: The media type to fetch
@@ -358,14 +358,18 @@ class ApiInterface:
 
     # Helper Methods ----------------------------------------------------------
 
-    def __cache(self, data: Optional[CacheAble]):
+    def __cache(self, data: Optional[CacheAble], dont_write: bool = True):
         """
         Caches a cache-able data object
         :param data: The data object to cache
+        :param dont_write: Will make sure that the cache won't be written to
+                           file.
         :return: None
         """
         if data is not None:
-            self.cache.add(self.id_type, data)
+            self.cache.add(
+                self.id_type, data, ignore_for_write_count=dont_write
+            )
 
     def __generate_id_obj(self, _id: int or Id) -> Id:
         """

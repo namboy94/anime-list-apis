@@ -62,7 +62,7 @@ class KitsuApi(ApiInterface):
             media_type: MediaType,
             _id: Id,
             username: str
-    ) -> Optional[MediaListEntry]:
+    ) -> Optional[MediaUserData]:
         """
         Actual implementation of the get_user_data for each subclass
         :param media_type: The media type to fetch

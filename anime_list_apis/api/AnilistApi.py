@@ -56,7 +56,7 @@ class AnilistApi(ApiInterface):
     def _get_data(
             self,
             media_type: MediaType,
-            _id: int or Id
+            _id: Id
     ) -> Optional[MediaData]:
         """
         Retrieves a single data object using the API
@@ -91,7 +91,7 @@ class AnilistApi(ApiInterface):
             media_type: MediaType,
             _id: Id,
             username: str
-    ) -> Optional[MediaListEntry]:
+    ) -> Optional[MediaUserData]:
         """
         Actual implementation of the get_user_data for each subclass
         :param media_type: The media type to fetch
@@ -100,7 +100,11 @@ class AnilistApi(ApiInterface):
         :return: The user data for the entry or
                  None if the user doesn't have such an entry
         """
-        raise NotImplementedError()  # pragma: no cover
+        entry = self._get_list_entry(media_type, _id, username)
+        if entry is not None:
+            return entry.get_user_data()
+        else:
+            return None
 
     def _get_user_data_list(self, media_type: MediaType, username: str) \
             -> List[MediaUserData]:
@@ -111,7 +115,10 @@ class AnilistApi(ApiInterface):
         :param username: The username for which to fetch the list
         :return: The list of user data
         """
-        raise NotImplementedError()  # pragma: no cover
+        return list(map(
+            lambda x: x.get_user_data(),
+            self._get_list(media_type, username)
+        ))
 
     def _get_list_entry(
             self,
@@ -138,7 +145,10 @@ class AnilistApi(ApiInterface):
         # inject = self.media_list_entry_query
         inject = self.__media_list_entry_query.replace(
             self.__media_query,
-            "id"
+            """
+            id
+            idMal
+            """
         )
 
         query = """
@@ -163,7 +173,7 @@ class AnilistApi(ApiInterface):
             # media_data = self.__generate_media_data(
             #     media_type, result["MediaList"]["media"]
             # )
-            media_data = self.get_data(media_type, _id)
+            media_data = self._get_data(media_type, _id)
 
             user_data = self.__generate_media_user_data(
                 media_type, result["MediaList"]
@@ -251,7 +261,13 @@ class AnilistApi(ApiInterface):
         :param data: The data to parse as User Data
         :return: The generated MediaUserData object
         """
+        _id = Id({
+            IdType.ANILIST: data["media"]["id"],
+            IdType.MYANIMELIST: data["media"]["idMal"]
+        })
+
         serialized = {
+            "media_id": _id.serialize(),
             "media_type": media_type.name,
             "username": data["user"]["name"],
             "score": Score(data["score"], ScoreType.PERCENTAGE).serialize(),
@@ -378,23 +394,19 @@ class AnilistApi(ApiInterface):
         else:
             return result["data"]
 
-    def __resolve_query_id(self, media_type: MediaType, _id: int or Id,
+    def __resolve_query_id(self, media_type: MediaType, _id: Id,
                            allow_mal: bool) -> Optional[Tuple[int, IdType]]:
         """
         Calculates the ID value to use in a query
         :param media_type: The media type of the ID
-        :param _id: The ID, which may be an Id object or an int value
+        :param _id: The ID
         :param allow_mal: If True, may return a Myanimelist ID.
                           This will be signified by the second return value
                           being IdType.MYANIMELIST
         :return: A tuple consisting of the ID and the IDs type
         """
-        if not isinstance(_id, int):
-            mal_id = _id.get(IdType.MYANIMELIST)
-            anilist_id = _id.get(IdType.ANILIST)
-        else:
-            mal_id = None
-            anilist_id = _id
+        mal_id = _id.get(IdType.MYANIMELIST)
+        anilist_id = _id.get(IdType.ANILIST)
 
         id_type = IdType.ANILIST
         if anilist_id is None:

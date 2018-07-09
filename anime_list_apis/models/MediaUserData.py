@@ -18,7 +18,10 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from typing import Dict, List, Tuple, Set, Optional
+
+from anime_list_apis.models.ModelType import ModelType
 from anime_list_apis.models.Serializable import MediaSerializable
+from anime_list_apis.models.attributes.Id import Id
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.Date import Date
@@ -31,8 +34,14 @@ class MediaUserData(MediaSerializable):
     Models a user's entry data for an anime series
     """
 
+    model_type = ModelType.MEDIA_USER_DATA
+    """
+    The cache-able model type
+    """
+
     def __init__(
             self,
+            media_id: Id,
             media_type: MediaType,
             username: str,
             score: Score,
@@ -42,6 +51,7 @@ class MediaUserData(MediaSerializable):
     ):
         """
         Initializes the MediaUserData object
+        :param media_id: The ID of the corresponding MediaData object
         :param media_type: The type of media represented
         :param username: The user's username
         :param score: The user's score for this entry
@@ -50,6 +60,7 @@ class MediaUserData(MediaSerializable):
         :param consuming_end: The date on which the user completed the entry
         :raises TypeError: If any of the parameters has a wrong type
         """
+        self.ensure_type(media_id, Id)
         self.ensure_type(media_type, MediaType)
         self.ensure_type(username, str)
         self.ensure_type(score, Score)
@@ -57,6 +68,7 @@ class MediaUserData(MediaSerializable):
         self.ensure_type(consuming_start, Date, True)
         self.ensure_type(consuming_end, Date, True)
 
+        self.id = media_id
         self.media_type = media_type
         self.username = username
         self.score = score
@@ -95,6 +107,7 @@ class MediaUserData(MediaSerializable):
         :return: The serialized form of this object
         """
         serialized = {
+            "media_id": self.id.serialize(),
             "media_type": self.media_type.name,
             "username": self.username,
             "score": self.score.serialize(),
@@ -133,6 +146,7 @@ class MediaUserData(MediaSerializable):
         :return: The deserialized dictionary
         """
         deserialized = {
+            "media_id": Id.deserialize(data["media_id"]),
             "media_type": MediaType[data["media_type"]],
             "username": data["username"],
             "score": Score.deserialize(data["score"]),
@@ -155,7 +169,7 @@ class MediaUserData(MediaSerializable):
         :return: The order of common parameters
         """
         return [
-            "username", "score",
+            "media_id", "username", "score",
             "consuming_status", "consuming_start", "consuming_end"
         ]
 
@@ -167,6 +181,7 @@ class AnimeUserData(MediaUserData):
 
     def __init__(
             self,
+            media_id: Id,
             username: str,
             score: Score,
             consuming_status: ConsumingStatus,
@@ -176,6 +191,7 @@ class AnimeUserData(MediaUserData):
     ):
         """
         Initializes the AnimeUserData object
+        :param media_id: The ID of the corresponding AnimeData object
         :param username: The user's username
         :param score: The user's score for this anime
         :param consuming_status: The user's current watching status
@@ -185,6 +201,7 @@ class AnimeUserData(MediaUserData):
         :raises TypeError: If any of the parameters has a wrong type
         """
         super().__init__(
+            media_id,
             MediaType.ANIME,
             username,
             score,
@@ -237,6 +254,7 @@ class MangaUserData(MediaUserData):
 
     def __init__(
             self,
+            media_id: Id,
             username: str,
             score: Score,
             consuming_status: ConsumingStatus,
@@ -247,6 +265,7 @@ class MangaUserData(MediaUserData):
     ):
         """
         Initializes the MangaUserData object
+        :param media_id: The ID of the corresponding MangaData object
         :param username: The user's username
         :param score: The user's score for this manga
         :param consuming_status: The user's current reading status
@@ -257,6 +276,7 @@ class MangaUserData(MediaUserData):
         :raises TypeError: If any of the parameters has a wrong type
         """
         super().__init__(
+            media_id,
             MediaType.MANGA,
             username,
             score,

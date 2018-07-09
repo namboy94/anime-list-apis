@@ -19,6 +19,7 @@ LICENSE"""
 
 from typing import Dict, List, Tuple, Set, Optional
 from anime_list_apis.models.Serializable import MediaSerializable
+from anime_list_apis.models.ModelType import ModelType
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id
 from anime_list_apis.models.attributes.MediaType import MediaType
@@ -31,6 +32,11 @@ from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 class MediaData(MediaSerializable):
     """
     Class that models user-independent media data
+    """
+
+    model_type = ModelType.MEDIA_DATA
+    """
+    The cache-able model type
     """
 
     def __init__(

@@ -18,6 +18,8 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from typing import Dict, List, Tuple, Set, Optional
+
+from anime_list_apis.models.ModelType import ModelType
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 from anime_list_apis.models.attributes.MediaType import MediaType
@@ -34,6 +36,11 @@ class MediaListEntry(Serializable):
     Class that models a user's media list entry
     """
 
+    model_type = ModelType.MEDIA_LIST_ENTRY
+    """
+    The cache-able model type
+    """
+
     def __init__(self, media_type: MediaType,
                  media_data: MediaData, user_data: MediaUserData):
         """
@@ -46,6 +53,9 @@ class MediaListEntry(Serializable):
                          MediaData.get_class_for_media_type(media_type))
         self.ensure_type(user_data,
                          MediaUserData.get_class_for_media_type(media_type))
+
+        if media_data.id != user_data.id:
+            raise ValueError("Mismatching IDs")
 
         self.media_type = media_type
         self.id = media_data.id
@@ -200,6 +210,7 @@ class AnimeListEntry(MediaListEntry):
         :raises TypeError: If any of the internal parameters has a wrong type
         """
         return AnimeUserData(
+            self.id,
             self.username,
             self.score,
             self.consuming_status,
@@ -252,6 +263,7 @@ class MangaListEntry(MediaListEntry):
         :raises TypeError: If any of the internal parameters has a wrong type
         """
         return MangaUserData(
+            self.id,
             self.username,
             self.score,
             self.consuming_status,

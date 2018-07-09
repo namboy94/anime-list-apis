@@ -378,3 +378,23 @@ class TestMediaListEntry(TestCase):
         representation = str(data)
         serialised = json.loads(representation)
         self.assertEqual(data, MangaListEntry.deserialize(serialised))
+
+    def test_mismatching_ids(self):
+        """
+        Tests that two mismatched IDs are identified and raise a ValueError
+        :return: None
+        """
+        media = TestMediaData.generate_sample_anime_data()
+        user = TestMediaUserData.generate_sample_anime_user_data()
+        self.assertEqual(media.id, user.id)
+
+        AnimeListEntry(media, user)
+
+        user.id = Id({IdType.MYANIMELIST: 2})
+        self.assertNotEqual(media.id, user.id)
+
+        try:
+            AnimeListEntry(media, user)
+            self.fail()
+        except ValueError:
+            pass

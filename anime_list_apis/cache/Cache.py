@@ -20,7 +20,6 @@ LICENSE"""
 import os
 import time
 import json
-from enum import Enum
 from copy import deepcopy
 from typing import Dict, Optional
 from anime_list_apis.models.Serializable import Serializable
@@ -29,19 +28,21 @@ from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.MediaData import MediaData
 from anime_list_apis.models.MediaUserData import MediaUserData
 from anime_list_apis.models.MediaListEntry import MediaListEntry
-
-
-class CacheType(Enum):
-    """
-    An enumeration that defines what sorts of data can be stored in the cache
-    """
-    MEDIA_DATA = MediaData
-    USER_DATA = MediaUserData
+from anime_list_apis.models.ModelType import ModelType
 
 
 class Cache:
     """
     Handles various caching functionality
+    """
+
+    model_map = {
+        ModelType.MEDIA_DATA: MediaData,
+        ModelType.MEDIA_USER_DATA: MediaUserData,
+        ModelType.MEDIA_LIST_ENTRY: MediaListEntry
+    }
+    """
+    Maps model types to their respective classes
     """
 
     def __init__(
@@ -89,19 +90,19 @@ class Cache:
         """
         serialized = {}
 
-        for cache_type in self.__cache:
-            serialized[cache_type.name] = {}
+        for model_type in self.__cache:
+            serialized[model_type.name] = {}
 
-            for site_type in self.__cache[cache_type]:
-                serialized[cache_type.name][site_type.name] = {}
+            for site_type in self.__cache[model_type]:
+                serialized[model_type.name][site_type.name] = {}
 
-                for tag in self.__cache[cache_type][site_type]:
-                    serialized[cache_type.name][site_type.name][tag] = {
+                for tag in self.__cache[model_type][site_type]:
+                    serialized[model_type.name][site_type.name][tag] = {
                         "timestamp":
-                            self.__cache[cache_type][site_type][tag]
+                            self.__cache[model_type][site_type][tag]
                             ["timestamp"],
                         "data":
-                            self.__cache[cache_type][site_type][tag]
+                            self.__cache[model_type][site_type][tag]
                             ["data"].serialize()
                     }
 
@@ -124,157 +125,104 @@ class Cache:
 
         self.__cache = self.__generate_empty_cache()
 
-        for _cache_type, cache_data in serialized.items():
-            cache_type = CacheType[_cache_type]
-            data_class = cache_type.value  # type: Serializable
+        for _model_type, cache_data in serialized.items():
+            model_type = ModelType[_model_type]
+            data_class = self.model_map[model_type]  # type: Serializable
 
             for _site_type, site_data in cache_data.items():
                 site_type = IdType[_site_type]
 
                 for tag, entry in site_data.items():
-                    self.__cache[cache_type][site_type][tag] = {
+                    self.__cache[model_type][site_type][tag] = {
                         "timestamp": entry["timestamp"],
                         "data": data_class.deserialize(entry["data"])
                     }
 
-    def __add_cached(
+    def add(
             self,
-            cache_type:
-            CacheType,
             site_type: IdType,
-            _id: int or Id,
-            data: MediaData or MediaUserData,
+            data: MediaData or MediaUserData or MediaListEntry,
             ignore_for_write_count: bool = False
     ):
         """
         Adds a copy of an object to the cache.
         If the amount of changes exceeds the amount defined in write_after,
         write to file afterwards
-        :param cache_type: The type of data to cache
         :param site_type: The site for which to cache it
-        :param _id: The ID of the object in the cache
         :param data: The data to cache
         :param ignore_for_write_count: If set to True, will not increment the
                                        change_count variable.
         :return: None
         """
-        _id = self.__resolve_id(site_type, _id)
-        if hasattr(data, "username"):
-            username = data.username
+        if data.model_type == ModelType.MEDIA_LIST_ENTRY:
+            self.add(site_type, data.get_media_data(), ignore_for_write_count)
+            self.add(site_type, data.get_user_data(), ignore_for_write_count)
+        
         else:
-            username = None
-        tag = self.generate_id_tag(data.media_type, _id, username)
+            if data.model_type == ModelType.MEDIA_USER_DATA:
+                username = data.username
+            else:
+                username = None
 
-        self.__cache[cache_type][site_type][tag] = {
-            "timestamp": time.time(),
-            "data": deepcopy(data)
-        }
-        if not ignore_for_write_count:
-            self.change_count += 1
+            _id = data.id.get(site_type)
+            tag = self.generate_id_tag(data.media_type, _id, username)
+    
+            self.__cache[data.model_type][site_type][tag] = {
+                "timestamp": time.time(),
+                "data": deepcopy(data)
+            }
+            if not ignore_for_write_count:
+                self.change_count += 1
+    
+            if self.change_count >= self.write_after:
+                self.write()
 
-        if self.change_count >= self.write_after:
-            self.write()
-
-    def add_media_data(
+    def get(
             self,
-            site_type: IdType,
-            data: MediaData,
-            ignore_for_write_count: bool = False
-    ):
-        """
-        Adds a media data object to the cache
-        :param site_type: The site for which to add the entry
-        :param data: The data object to add
-        :param ignore_for_write_count: If set to True, will not increment the
-                                       change_count variable.
-        :return: None
-        """
-        _id = data.id.get(site_type)
-        self.__add_cached(
-            CacheType.MEDIA_DATA,
-            site_type,
-            _id,
-            data,
-            ignore_for_write_count
-        )
-
-    def add_media_user_data(
-            self,
-            site_type: IdType,
-            _id: int or Id,
-            data: MediaUserData,
-            ignore_for_write_count: bool = False
-    ):
-        """
-        Adds a user data object to the cache
-        :param site_type: The type of the site
-        :param _id: The ID of the corresponding media data
-        :param data: The data to cache
-        :param ignore_for_write_count: If set to True, will not increment the
-                                       change_count variable.
-        :return: None
-        """
-        self.__add_cached(
-            CacheType.USER_DATA,
-            site_type,
-            _id,
-            data,
-            ignore_for_write_count
-        )
-
-    def add_media_list_entry(
-            self,
-            site_type: IdType,
-            data: MediaListEntry,
-            ignore_for_write_count: bool = False
-    ):
-        """
-        Stores a media list entry in the cache
-        :param site_type: The site type to store it for
-        :param data: The data to store
-        :param ignore_for_write_count: If set to True, will not increment the
-                                       change_count variable.
-        :return: None
-        """
-        self.add_media_data(
-            site_type, data.get_media_data(), ignore_for_write_count
-        )
-        self.add_media_user_data(
-            site_type, data.id, data.get_user_data(), ignore_for_write_count
-        )
-
-    def __get_cached(
-            self,
-            cache_type: CacheType,
+            model_type: ModelType,
             site_type: IdType,
             media_type: MediaType,
             _id: int or Id,
             username: Optional[str] = None
-    ) -> Optional[MediaData or MediaUserData]:
+    ) -> Optional[MediaData or MediaUserData or MediaListEntry]:
         """
         Retrieves a cached object.
         If the object has expired, remove it from the cache
-        :param cache_type: The cached data type
+        :param model_type: The cached data type
         :param site_type: The site type for which the object was cached
         :param media_type: The media type of the object to get
         :param _id: The ID to search for
         :param username: Optional-The username associated with the data object
         :return: A copy of the cached object, or None if it wasn't found
         """
-        _id = self.__resolve_id(site_type, _id)
-        tag = self.generate_id_tag(media_type, _id, username)
-
-        if tag in self.__cache[cache_type][site_type]:
-            entry = self.__cache[cache_type][site_type][tag]
-            timestamp = entry["timestamp"]
-
-            if time.time() - timestamp > self.expiration >= 0:
-                self.__cache[cache_type][site_type].pop(tag)
+        if model_type == ModelType.MEDIA_LIST_ENTRY:
+            media = self.get(
+                ModelType.MEDIA_DATA, site_type, media_type, _id, username
+            )
+            user = self.get(
+                ModelType.MEDIA_USER_DATA, site_type, media_type, _id, username
+            )
+            try:
+                media_cls = MediaListEntry.get_class_for_media_type(media_type)
+                return media_cls(media, user)
+            except (ValueError, TypeError):
                 return None
-            else:
-                return deepcopy(entry["data"])
+            
         else:
-            return None
+            _id = self.__resolve_id(site_type, _id)
+            tag = self.generate_id_tag(media_type, _id, username)
+    
+            if tag in self.__cache[model_type][site_type]:
+                entry = self.__cache[model_type][site_type][tag]
+                timestamp = entry["timestamp"]
+    
+                if time.time() - timestamp > self.expiration >= 0:
+                    self.__cache[model_type][site_type].pop(tag)
+                    return None
+                else:
+                    return deepcopy(entry["data"])
+            else:
+                return None
 
     def get_media_data(
             self,
@@ -289,8 +237,8 @@ class Cache:
         :param _id: The ID to fetch
         :return: The entry data or None if no corresponding entry exists
         """
-        return self.__get_cached(
-            CacheType.MEDIA_DATA,
+        return self.get(
+            ModelType.MEDIA_DATA,
             site_type,
             media_type,
             _id
@@ -311,8 +259,8 @@ class Cache:
         :param username: The username of the entry
         :return: The entry or None if not found
         """
-        return self.__get_cached(
-            CacheType.USER_DATA,
+        return self.get(
+            ModelType.MEDIA_USER_DATA,
             site_type,
             media_type,
             _id,
@@ -351,7 +299,7 @@ class Cache:
     @staticmethod
     def __generate_empty_cache() \
             -> Dict[
-                CacheType, Dict[
+                ModelType, Dict[
                     IdType, Dict[
                         str, Dict[
                             str, int or Serializable
@@ -364,7 +312,7 @@ class Cache:
         The cache has the following structure:
 
         {
-            CacheType: {
+            ModelType: {
                 SiteType: {
                     MediaType + Id: {
                         "timestamp": float,
@@ -374,13 +322,20 @@ class Cache:
             }
         }
 
+        The ModelType 'MediaListEntry' will be split into their
+        'MediaData' and 'MediaUserData' components, so there will be no
+        separate entry for them
         :return: The generated cache dictionary
         """
         cache = {}
-        for cache_type in CacheType:
-            cache[cache_type] = {}
+        for model_type in ModelType:
+
+            if model_type == ModelType.MEDIA_LIST_ENTRY:
+                continue
+            cache[model_type] = {}
+
             for site_type in IdType:
-                cache[cache_type][site_type] = {}
+                cache[model_type][site_type] = {}
         return cache
 
     @staticmethod

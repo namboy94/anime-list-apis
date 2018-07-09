@@ -67,36 +67,40 @@ class TestCacher(TestCase):
         :return: None
         """
         entry = TestMediaListEntry.generate_sample_anime_entry()
-        _id = entry.id.get(IdType.MYANIMELIST)
+        one = entry.id
+        two = Id({IdType.MYANIMELIST: 2})
         user = entry.username
 
-        self.cache.add_media_data(IdType.MYANIMELIST, entry.get_media_data())
-        self.cache.add_media_user_data(IdType.MYANIMELIST, entry.id,
-                                       entry.get_user_data())
-        self.cache.add_media_list_entry(IdType.MYANIMELIST, entry)
-        self.cache.write()
+        self.cache.add(IdType.MYANIMELIST, entry.get_media_data())
+        self.cache.add(IdType.MYANIMELIST, entry.get_user_data())
 
+        entry.id = two
+        self.cache.add(IdType.MYANIMELIST, entry)
+
+        self.cache.write()
         new_cache = Cache("testdir/.cache")
 
         for cache in [self.cache, new_cache]:
-            self.assertEqual(
-                cache.get_media_data(
-                    IdType.MYANIMELIST, MediaType.ANIME, _id
-                ),
-                entry.get_media_data()
-            )
-            self.assertEqual(
-                cache.get_media_user_data(
-                    IdType.MYANIMELIST, MediaType.ANIME, _id, user
-                ),
-                entry.get_user_data()
-            )
-            self.assertEqual(
-                cache.get_media_list_entry(
-                    IdType.MYANIMELIST, MediaType.ANIME, _id, user
-                ),
-                entry
-            )
+            for _id in [one, two]:
+                entry.id = _id
+                self.assertEqual(
+                    cache.get_media_data(
+                        IdType.MYANIMELIST, MediaType.ANIME, _id
+                    ),
+                    entry.get_media_data()
+                )
+                self.assertEqual(
+                    cache.get_media_user_data(
+                        IdType.MYANIMELIST, MediaType.ANIME, _id, user
+                    ),
+                    entry.get_user_data()
+                )
+                self.assertEqual(
+                    cache.get_media_list_entry(
+                        IdType.MYANIMELIST, MediaType.ANIME, _id, user
+                    ),
+                    entry
+                )
 
     def test_reloading(self):
         """
@@ -108,7 +112,7 @@ class TestCacher(TestCase):
         _id, user, media = entry.id, entry.username, entry.media_type
         site = IdType.MYANIMELIST
 
-        cache.add_media_list_entry(site, entry)
+        cache.add(site, entry)
         cache.write()
         self.assertIsNone(self.cache.get_media_list_entry(
             site, media, _id, user
@@ -138,27 +142,6 @@ class TestCacher(TestCase):
             IdType.MYANIMELIST, MediaType.ANIME, 1, ""
         ))
 
-    def test_storing_list_entry(self):
-        """
-        Makes sure that a MediaListEntry's user and media data are both stored
-        :return: None
-        """
-        entry = TestMediaListEntry.generate_sample_manga_entry()
-        _id, user, media = entry.id, entry.username, entry.media_type
-        site = IdType.MYANIMELIST
-
-        self.cache.add_media_list_entry(IdType.MYANIMELIST, entry)
-        self.assertEqual(
-            self.cache.get_media_data(site, media, _id), entry.get_media_data()
-        )
-        self.assertEqual(
-            self.cache.get_media_user_data(site, media, _id, user),
-            entry.get_user_data()
-        )
-        self.assertEqual(
-            self.cache.get_media_list_entry(site, media, _id, user), entry
-        )
-
     def test_getting_from_other_site_type(self):
         """
         Tests that it's not possible to get an entry from another site
@@ -168,7 +151,7 @@ class TestCacher(TestCase):
         _id, user, media = entry.id, entry.username, entry.media_type
         site = IdType.MYANIMELIST
 
-        self.cache.add_media_list_entry(site, entry)
+        self.cache.add(site, entry)
         self.assertIsNotNone(
             self.cache.get_media_list_entry(site, media, _id, user)
         )
@@ -183,34 +166,34 @@ class TestCacher(TestCase):
         """
         anime = TestMediaUserData.generate_sample_anime_user_data()
         manga = TestMediaUserData.generate_sample_manga_user_data()
-        ani_id_obj, ani_id_int = Id({IdType.MYANIMELIST: 1}), 1
-        man_id_obj, man_id_int = Id({IdType.MYANIMELIST: 1}), 1
+        anime_int = anime.id.get(IdType.MYANIMELIST)
+        manga_int = manga.id.get(IdType.MYANIMELIST)
         site = IdType.MYANIMELIST
 
-        self.cache.add_media_user_data(site, ani_id_int, anime)
-        self.cache.add_media_user_data(site, man_id_obj, manga)
+        self.cache.add(site, anime)
+        self.cache.add(site, manga)
 
         self.assertEqual(
             self.cache.get_media_user_data(
-                site, MediaType.ANIME, ani_id_int, anime.username
+                site, MediaType.ANIME, anime_int, anime.username
             ),
             anime
         )
         self.assertEqual(
             self.cache.get_media_user_data(
-                site, MediaType.ANIME, ani_id_obj, anime.username
+                site, MediaType.ANIME, anime.id, anime.username
             ),
             anime
         )
         self.assertEqual(
             self.cache.get_media_user_data(
-                site, MediaType.MANGA, man_id_int, manga.username
+                site, MediaType.MANGA, manga_int, manga.username
             ),
             manga
         )
         self.assertEqual(
             self.cache.get_media_user_data(
-                site, MediaType.MANGA, man_id_obj, manga.username
+                site, MediaType.MANGA, manga.id, manga.username
             ),
             manga
         )
@@ -226,12 +209,12 @@ class TestCacher(TestCase):
         site = IdType.MYANIMELIST
 
         # Immediately Deleted
-        cache.add_media_list_entry(site, entry)
+        cache.add(site, entry)
         self.assertIsNone(cache.get_media_list_entry(site, media, _id, user))
 
         # Deleted after one second
         cache = Cache(self.cache.cache_location, expiration=1)
-        cache.add_media_list_entry(site, entry)
+        cache.add(site, entry)
         self.assertIsNotNone(
             cache.get_media_list_entry(site, media, _id, user)
         )
@@ -239,7 +222,7 @@ class TestCacher(TestCase):
         self.assertIsNone(cache.get_media_list_entry(site, media, _id, user))
 
         # Test that updating works
-        cache.add_media_list_entry(site, entry)
+        cache.add(site, entry)
         self.assertIsNotNone(
             cache.get_media_list_entry(site, media, _id, user)
         )
@@ -247,7 +230,7 @@ class TestCacher(TestCase):
         self.assertIsNotNone(
             cache.get_media_list_entry(site, media, _id, user)
         )
-        cache.add_media_list_entry(site, entry)  # Update
+        cache.add(site, entry)  # Update
         time.sleep(0.7)
         self.assertIsNotNone(
             cache.get_media_list_entry(site, media, _id, user)
@@ -266,7 +249,7 @@ class TestCacher(TestCase):
         _id, user, media = entry.id, entry.username, entry.media_type
         site = IdType.MYANIMELIST
 
-        cache.add_media_list_entry(site, entry)
+        cache.add(site, entry)
         new_cache = Cache(self.cache.cache_location)
         self.assertIsNotNone(new_cache.get_media_list_entry(
             site, media, _id, user
@@ -284,7 +267,7 @@ class TestCacher(TestCase):
         _id, media, site = data.id, data.media_type, IdType.MYANIMELIST
 
         def add_and_check(invalid: bool):
-            cache.add_media_data(site, data)
+            cache.add(site, data)
             new_cache = Cache(self.cache.cache_location)
             self.assertEqual(
                 new_cache.get_media_data(site, media, _id) is None,
@@ -305,8 +288,8 @@ class TestCacher(TestCase):
         manga_user_data = TestMediaUserData.generate_sample_manga_user_data()
         site = IdType.MYANIMELIST
 
-        self.cache.add_media_data(IdType.MYANIMELIST, anime_data)
-        self.cache.add_media_user_data(site, anime_data.id, manga_user_data)
+        self.cache.add(IdType.MYANIMELIST, anime_data)
+        self.cache.add(site, manga_user_data)
 
         for media_type in MediaType:
             self.assertIsNone(self.cache.get_media_list_entry(

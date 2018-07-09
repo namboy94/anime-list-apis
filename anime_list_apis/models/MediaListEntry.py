@@ -72,14 +72,17 @@ class MediaListEntry(MediaSerializable, CacheAble):
         :param media_data: The media data
         :param user_data: The user data
         :raises TypeError: If any of the parameters has a wrong type
+        :raises ValueError: If the media and user data do not match
         """
         self.ensure_type(media_data,
                          MediaData.get_class_for_media_type(media_type))
         self.ensure_type(user_data,
                          MediaUserData.get_class_for_media_type(media_type))
 
-        if media_data.id != user_data.id:
-            raise ValueError("Mismatching IDs")
+        if media_data.id != user_data.id \
+                or media_data.media_type != user_data.media_type \
+                or media_type != media_data.media_type:
+            raise ValueError("Mismatching User and Media Data")
 
         self.media_type = media_type
         self.id = media_data.id

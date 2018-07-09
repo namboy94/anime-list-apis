@@ -158,7 +158,7 @@ class Cache:
             data = data  # type: MediaListEntry
             self.add(site_type, data.get_media_data(), ignore_for_write_count)
             self.add(site_type, data.get_user_data(), ignore_for_write_count)
-        
+
         else:
             if data.get_model_type() == CacheModelType.MEDIA_USER_DATA:
                 username = data.get_username()
@@ -167,14 +167,14 @@ class Cache:
 
             _id = data.get_id().get(site_type)
             tag = self.generate_id_tag(data.get_media_type(), _id, username)
-    
+
             self.__cache[data.get_model_type()][site_type][tag] = {
                 "timestamp": time.time(),
                 "data": deepcopy(data)
             }
             if not ignore_for_write_count:
                 self.change_count += 1
-    
+
             if self.change_count >= self.write_after:
                 self.write()
 
@@ -198,25 +198,32 @@ class Cache:
         """
         if model_type == CacheModelType.MEDIA_LIST_ENTRY:
             media = self.get(
-                CacheModelType.MEDIA_DATA, site_type, media_type, _id, username
+                CacheModelType.MEDIA_DATA,
+                site_type,
+                media_type,
+                _id
             )
             user = self.get(
-                CacheModelType.MEDIA_USER_DATA, site_type, media_type, _id, username
+                CacheModelType.MEDIA_USER_DATA,
+                site_type,
+                media_type,
+                _id,
+                username
             )
             try:
                 media_cls = MediaListEntry.get_class_for_media_type(media_type)
                 return media_cls(media, user)
             except (ValueError, TypeError):
                 return None
-            
+
         else:
             _id = self.__resolve_id(site_type, _id)
             tag = self.generate_id_tag(media_type, _id, username)
-    
+
             if tag in self.__cache[model_type][site_type]:
                 entry = self.__cache[model_type][site_type][tag]
                 timestamp = entry["timestamp"]
-    
+
                 if time.time() - timestamp > self.expiration >= 0:
                     self.__cache[model_type][site_type].pop(tag)
                     return None
@@ -283,19 +290,13 @@ class Cache:
         :param username: The username of the entry
         :return: The entry or None if not found
         """
-        media_data = self.get_media_data(site_type, media_type, _id)
-        user_data = \
-            self.get_media_user_data(site_type, media_type, _id, username)
-
-        if media_data is not None and user_data is not None \
-                and media_data.media_type == user_data.media_type \
-                and media_type == media_data.media_type:
-
-            media_class = MediaListEntry.get_class_for_media_type(media_type)
-            return media_class(media_data, user_data)
-
-        else:
-            return None
+        return self.get(
+            CacheModelType.MEDIA_LIST_ENTRY,
+            site_type,
+            media_type,
+            _id,
+            username
+        )
 
     @staticmethod
     def __generate_empty_cache() \

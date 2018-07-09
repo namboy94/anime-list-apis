@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-from enum import Enum, auto
+from enum import Enum
 from typing import Optional
 from anime_list_apis.models.attributes.Id import IdType, Id
 from anime_list_apis.models.Serializable import Serializable
@@ -28,9 +28,9 @@ class CacheModelType(Enum):
     """
     An enumeration that keeps track of different cache-able model types
     """
-    MEDIA_DATA = auto()
-    MEDIA_USER_DATA = auto()
-    MEDIA_LIST_ENTRY = auto()
+    MEDIA_DATA = 1
+    MEDIA_USER_DATA = 2
+    MEDIA_LIST_ENTRY = 3
 
 
 # noinspection PyAbstractClass

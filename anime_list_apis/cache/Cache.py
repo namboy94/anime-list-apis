@@ -28,7 +28,7 @@ from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.MediaData import MediaData
 from anime_list_apis.models.MediaUserData import MediaUserData
 from anime_list_apis.models.MediaListEntry import MediaListEntry
-from anime_list_apis.models.ModelType import ModelType
+from anime_list_apis.models.CacheAble import CacheModelType, CacheAble
 
 
 class Cache:
@@ -37,9 +37,9 @@ class Cache:
     """
 
     model_map = {
-        ModelType.MEDIA_DATA: MediaData,
-        ModelType.MEDIA_USER_DATA: MediaUserData,
-        ModelType.MEDIA_LIST_ENTRY: MediaListEntry
+        CacheModelType.MEDIA_DATA: MediaData,
+        CacheModelType.MEDIA_USER_DATA: MediaUserData,
+        CacheModelType.MEDIA_LIST_ENTRY: MediaListEntry
     }
     """
     Maps model types to their respective classes
@@ -126,7 +126,7 @@ class Cache:
         self.__cache = self.__generate_empty_cache()
 
         for _model_type, cache_data in serialized.items():
-            model_type = ModelType[_model_type]
+            model_type = CacheModelType[_model_type]
             data_class = self.model_map[model_type]  # type: Serializable
 
             for _site_type, site_data in cache_data.items():
@@ -141,7 +141,7 @@ class Cache:
     def add(
             self,
             site_type: IdType,
-            data: MediaData or MediaUserData or MediaListEntry,
+            data: CacheAble,
             ignore_for_write_count: bool = False
     ):
         """
@@ -154,20 +154,21 @@ class Cache:
                                        change_count variable.
         :return: None
         """
-        if data.model_type == ModelType.MEDIA_LIST_ENTRY:
+        if data.get_model_type() == CacheModelType.MEDIA_LIST_ENTRY:
+            data = data  # type: MediaListEntry
             self.add(site_type, data.get_media_data(), ignore_for_write_count)
             self.add(site_type, data.get_user_data(), ignore_for_write_count)
         
         else:
-            if data.model_type == ModelType.MEDIA_USER_DATA:
-                username = data.username
+            if data.get_model_type() == CacheModelType.MEDIA_USER_DATA:
+                username = data.get_username()
             else:
                 username = None
 
-            _id = data.id.get(site_type)
-            tag = self.generate_id_tag(data.media_type, _id, username)
+            _id = data.get_id().get(site_type)
+            tag = self.generate_id_tag(data.get_media_type(), _id, username)
     
-            self.__cache[data.model_type][site_type][tag] = {
+            self.__cache[data.get_model_type()][site_type][tag] = {
                 "timestamp": time.time(),
                 "data": deepcopy(data)
             }
@@ -179,12 +180,12 @@ class Cache:
 
     def get(
             self,
-            model_type: ModelType,
+            model_type: CacheModelType,
             site_type: IdType,
             media_type: MediaType,
             _id: int or Id,
             username: Optional[str] = None
-    ) -> Optional[MediaData or MediaUserData or MediaListEntry]:
+    ) -> Optional[CacheAble]:
         """
         Retrieves a cached object.
         If the object has expired, remove it from the cache
@@ -195,12 +196,12 @@ class Cache:
         :param username: Optional-The username associated with the data object
         :return: A copy of the cached object, or None if it wasn't found
         """
-        if model_type == ModelType.MEDIA_LIST_ENTRY:
+        if model_type == CacheModelType.MEDIA_LIST_ENTRY:
             media = self.get(
-                ModelType.MEDIA_DATA, site_type, media_type, _id, username
+                CacheModelType.MEDIA_DATA, site_type, media_type, _id, username
             )
             user = self.get(
-                ModelType.MEDIA_USER_DATA, site_type, media_type, _id, username
+                CacheModelType.MEDIA_USER_DATA, site_type, media_type, _id, username
             )
             try:
                 media_cls = MediaListEntry.get_class_for_media_type(media_type)
@@ -238,7 +239,7 @@ class Cache:
         :return: The entry data or None if no corresponding entry exists
         """
         return self.get(
-            ModelType.MEDIA_DATA,
+            CacheModelType.MEDIA_DATA,
             site_type,
             media_type,
             _id
@@ -260,7 +261,7 @@ class Cache:
         :return: The entry or None if not found
         """
         return self.get(
-            ModelType.MEDIA_USER_DATA,
+            CacheModelType.MEDIA_USER_DATA,
             site_type,
             media_type,
             _id,
@@ -299,7 +300,7 @@ class Cache:
     @staticmethod
     def __generate_empty_cache() \
             -> Dict[
-                ModelType, Dict[
+                CacheModelType, Dict[
                     IdType, Dict[
                         str, Dict[
                             str, int or Serializable
@@ -312,7 +313,7 @@ class Cache:
         The cache has the following structure:
 
         {
-            ModelType: {
+            CacheModelType: {
                 SiteType: {
                     MediaType + Id: {
                         "timestamp": float,
@@ -322,15 +323,15 @@ class Cache:
             }
         }
 
-        The ModelType 'MediaListEntry' will be split into their
+        The CacheModelType 'MediaListEntry' will be split into their
         'MediaData' and 'MediaUserData' components, so there will be no
         separate entry for them
         :return: The generated cache dictionary
         """
         cache = {}
-        for model_type in ModelType:
+        for model_type in CacheModelType:
 
-            if model_type == ModelType.MEDIA_LIST_ENTRY:
+            if model_type == CacheModelType.MEDIA_LIST_ENTRY:
                 continue
             cache[model_type] = {}
 

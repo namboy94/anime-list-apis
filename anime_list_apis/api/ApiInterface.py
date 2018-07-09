@@ -19,6 +19,7 @@ LICENSE"""
 
 from typing import List, Optional
 from anime_list_apis.cache.Cache import Cache
+from anime_list_apis.models.CacheAble import CacheAble
 from anime_list_apis.models.MediaUserData import MediaUserData
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
@@ -51,30 +52,80 @@ class ApiInterface:
         self.id_type = id_type
         self.rate_limit_pause = rate_limit_pause
 
-    def __cache(self, data: Optional [MediaData or MediaListEntry or MediaUserData]):
-        if no
+    def __cache(self, data: Optional[CacheAble]):
+        """
+        Caches a cache-able data object
+        :param data: The data object to cache
+        :return: None
+        """
+        if data is not None:
+            self.cache.add(self.id_type, data)
 
     def get_data(
             self,
             media_type: MediaType,
-            _id: int or Id
+            _id: int or Id,
+            fresh: bool = False
     ) -> Optional[MediaData]:
         """
         Retrieves a single data object using the API
         Tries to get the cached value first, then checks Anilist
         :param media_type: The media type to retrieve
         :param _id: The ID to retrieve. May be either an int or an Id object
+        :param fresh: Fetches a fresh, i.e. non-cached version
         :return: The Media Data or None if no valid data was found
         """
         cached = self.cache.get_media_data(IdType.ANILIST, media_type, _id)
 
-        if cached is None:
+        if fresh or cached is None:
             cached = self._get_data(media_type, _id)
-
-            if cached is not None:
-                self.cache.add(self.id_type, cached)
+            self.__cache(cached)
 
         return cached
+
+    def get_list_entry(
+            self,
+            media_type: MediaType,
+            _id: int or Id,
+            username: str,
+            fresh: bool = False
+    ) -> Optional[MediaListEntry or MediaUserData]:
+        """
+        Retrieves a user list entry.
+        First checks for cached entries, otherwise fetches from anilist
+        :param media_type: The media type to fetch
+        :param _id: The ID to retrieve. May be and int or an Id object
+        :param username: The user for which to fetch the entry
+        :param fresh: Fetches a fresh, i.e. non-cached version
+        :return: The entry for the user or
+                 None if the user doesn't have such an entry
+        """
+        cached = self.cache.get_media_list_entry(
+            IdType.ANILIST, media_type, _id, username
+        )
+
+        if fresh or cached is None:
+            cached = self._get_list_entry(media_type, _id, username)
+            self.__cache(cached)
+
+        return cached
+
+    def get_list(
+            self,
+            media_type: MediaType,
+            username: str,
+    ) -> List[MediaListEntry]:
+        """
+        Retrieves a user's entire list
+        Stores all entries in the cache upon completion
+        :param media_type: The media type to fetch
+        :param username: The username for which to fetch the list
+        :return: The list of List entries
+        """
+        entries = self._get_list(media_type, username)
+        for entry in entries:
+            self.__cache(entry)
+        return entries
 
     def _get_data(
             self,
@@ -89,33 +140,6 @@ class ApiInterface:
         :return: The Anime Data or None if no valid data was found
         """
         raise NotImplementedError()  # pragma: no cover
-
-    def get_list_entry(
-            self,
-            media_type: MediaType,
-            _id: int or Id,
-            username: str
-    ) -> Optional[MediaListEntry]:
-        """
-        Retrieves a user list entry.
-        First checks for cached entries, otherwise fetches from anilist
-        :param media_type: The media type to fetch
-        :param _id: The ID to retrieve. May be and int or an Id object
-        :param username: The user for which to fetch the entry
-        :return: The entry for the user or
-                 None if the user doesn't have such an entry
-        """
-        cached = self.cache.get_media_list_entry(
-            IdType.ANILIST, media_type, _id, username
-        )
-
-        if cached is None:
-            cached = self._get_list_entry(media_type, _id, username)
-
-            if cached is not None:
-                self.cache.add_media_list_entry(IdType.ANILIST, cached)
-
-        return cached
 
     def _get_list_entry(
             self,
@@ -132,20 +156,6 @@ class ApiInterface:
                  None if the user doesn't have such an entry
         """
         raise NotImplementedError()  # pragma: no cover
-
-    def get_list(self, media_type: MediaType, username: str) \
-            -> List[MediaListEntry]:
-        """
-        Retrieves a user's entire list
-        Stores all entries in the cache upon completion
-        :param media_type: The media type to fetch
-        :param username: The username for which to fetch the list
-        :return: The list of List entries
-        """
-        entries = self._get_list(media_type, username)
-        for entry in entries:
-            self.cache.add_media_list_entry(IdType.ANILIST, entry, True)
-        return entries
 
     def _get_list(self, media_type: MediaType, username: str) \
             -> List[MediaListEntry]:

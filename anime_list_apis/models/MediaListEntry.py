@@ -19,8 +19,9 @@ LICENSE"""
 
 from typing import Dict, List, Tuple, Set, Optional
 
-from anime_list_apis.models.ModelType import ModelType
-from anime_list_apis.models.Serializable import Serializable
+from anime_list_apis.models.CacheAble import CacheAble, CacheModelType
+from anime_list_apis.models.Serializable import MediaSerializable
+from anime_list_apis.models.attributes.Id import Id
 from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.attributes.Score import ScoreType
@@ -31,15 +32,38 @@ from anime_list_apis.models.MediaUserData import \
     AnimeUserData, MangaUserData, MediaUserData
 
 
-class MediaListEntry(Serializable):
+class MediaListEntry(MediaSerializable, CacheAble):
     """
     Class that models a user's media list entry
     """
 
-    model_type = ModelType.MEDIA_LIST_ENTRY
-    """
-    The cache-able model type
-    """
+    def get_id(self) -> Id:
+        """
+        Retrieves the cache entry's ID
+        :return: The ID
+        """
+        return self.id
+
+    def get_media_type(self) -> MediaType:
+        """
+        Retrieves the media type
+        :return: The media type
+        """
+        return self.media_type
+
+    def get_username(self) -> Optional[str]:
+        """
+        Retrieves the username, if applicable. Else None
+        :return: The username or None if not applicable
+        """
+        return self.username
+
+    def get_model_type(self) -> CacheModelType:
+        """
+        Retrieves the cache model type
+        :return: The model type
+        """
+        return CacheModelType.MEDIA_LIST_ENTRY
 
     def __init__(self, media_type: MediaType,
                  media_data: MediaData, user_data: MediaUserData):
@@ -71,6 +95,9 @@ class MediaListEntry(Serializable):
         self.consuming_status = user_data.consuming_status
         self.consuming_start = user_data.consuming_start
         self.consuming_end = user_data.consuming_end
+
+        self.__media_data_cls = type(media_data)
+        self.__user_data_cls = type(user_data)
 
     def get_media_data(self) -> MediaData:
         """
@@ -144,28 +171,54 @@ class MediaListEntry(Serializable):
         }
 
     @classmethod
-    def _deserialize(cls, data: Dict[str, Optional[str or int or float or bool
-                                     or Dict or List or Tuple or Set]]):
+    def _get_common_deserialized_components(
+            cls,
+            data: Dict[str, Optional[str or int or float or bool or
+                                     Dict or List or Tuple or Set]]) \
+            -> Dict[str, Optional[str or int or float or bool or
+                                  Dict or List or Tuple or Set]]:
         """
-        Deserializes a dictionary into an object of this type
+        Deserializes the common child components of the data dictionary
         :param data: The data to deserialize
-        :return: The deserialized object
-        :raises TypeError: If a type error occurred
-        :raises ValueError: If the data could not be deserialized
+        :return: The deserialized dictionary
         """
-        media_type = MediaType[data["media_type"]]
-        _cls = AnimeListEntry \
-            if media_type == MediaType.ANIME \
-            else MangaListEntry
+        deserialized = {
+            "media_type": MediaType[data["media_type"]],
+            "media_data": MediaData.deserialize(data["media_data"]),
+            "user_data": MediaUserData.deserialize(data["user_data"])
+        }
+        return deserialized
 
-        media_data = MediaData.deserialize(data["media_data"])
-        user_data = MediaUserData.deserialize(data["user_data"])
+    @classmethod
+    def _get_specific_deserialized_components(
+            cls,
+            data: Dict[str, Optional[str or int or float or bool or
+                                     Dict or List or Tuple or Set]]) \
+            -> Dict[str, Optional[str or int or float or bool or
+                                  Dict or List or Tuple or Set]]:
+        """
+        Deserializes class-specific child components of the data dictionary
+        :param data: The data to deserialize
+        :return: The deserialized dictionary
+        """
+        return {}
 
-        generated = _cls(
-            media_data,
-            user_data
-        )  # type: MediaListEntry
-        return generated
+    @classmethod
+    def _get_common_parameter_order(cls) -> List[str]:
+        """
+        Generates an order of constructor parameters for the common attributes
+        used for media classes
+        :return: The order of common parameters
+        """
+        return ["media_data", "user_data"]
+
+    @classmethod
+    def _get_additional_parameter_order(cls) -> List[str]:
+        """
+        Generates the order of class-specific additional constructor parameters
+        :return: The order of the additional parameters
+        """
+        return []
 
 
 class AnimeListEntry(MediaListEntry):

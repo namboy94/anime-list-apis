@@ -19,7 +19,7 @@ LICENSE"""
 
 from typing import Dict, List, Tuple, Set, Optional
 
-from anime_list_apis.models.ModelType import ModelType
+from anime_list_apis.models.CacheAble import CacheModelType, CacheAble
 from anime_list_apis.models.Serializable import MediaSerializable
 from anime_list_apis.models.attributes.Id import Id
 from anime_list_apis.models.attributes.MediaType import MediaType
@@ -29,15 +29,38 @@ from anime_list_apis.models.attributes.ConsumingStatus import ConsumingStatus
 
 
 # noinspection PyAbstractClass
-class MediaUserData(MediaSerializable):
+class MediaUserData(MediaSerializable, CacheAble):
     """
     Models a user's entry data for an anime series
     """
 
-    model_type = ModelType.MEDIA_USER_DATA
-    """
-    The cache-able model type
-    """
+    def get_id(self) -> Id:
+        """
+        Retrieves the cache entry's ID
+        :return: The ID
+        """
+        return self.id
+
+    def get_media_type(self) -> MediaType:
+        """
+        Retrieves the media type
+        :return: The media type
+        """
+        return self.media_type
+
+    def get_username(self) -> Optional[str]:
+        """
+        Retrieves the username, if applicable. Else None
+        :return: The username or None if not applicable
+        """
+        return self.username
+
+    def get_model_type(self) -> CacheModelType:
+        """
+        Retrieves the cache model type
+        :return: The model type
+        """
+        return CacheModelType.MEDIA_USER_DATA
 
     def __init__(
             self,

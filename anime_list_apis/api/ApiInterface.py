@@ -19,6 +19,7 @@ LICENSE"""
 
 from typing import List, Optional
 from anime_list_apis.cache.Cache import Cache
+from anime_list_apis.models.MediaUserData import MediaUserData
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
 from anime_list_apis.models.MediaData import AnimeData, MangaData, MediaData
@@ -50,6 +51,9 @@ class ApiInterface:
         self.id_type = id_type
         self.rate_limit_pause = rate_limit_pause
 
+    def __cache(self, data: Optional [MediaData or MediaListEntry or MediaUserData]):
+        if no
+
     def get_data(
             self,
             media_type: MediaType,
@@ -68,7 +72,7 @@ class ApiInterface:
             cached = self._get_data(media_type, _id)
 
             if cached is not None:
-                self.cache.add_media_data(self.id_type, cached)
+                self.cache.add(self.id_type, cached)
 
         return cached
 

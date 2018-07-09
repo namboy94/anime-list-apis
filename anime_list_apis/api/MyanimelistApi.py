@@ -20,8 +20,9 @@ LICENSE"""
 from typing import List, Optional
 from anime_list_apis.api.ApiInterface import ApiInterface
 from anime_list_apis.cache.Cache import Cache
-from anime_list_apis.models.MediaData import AnimeData
-from anime_list_apis.models.MediaListEntry import AnimeListEntry
+from anime_list_apis.models.MediaData import MediaData
+from anime_list_apis.models.MediaListEntry import MediaListEntry
+from anime_list_apis.models.MediaUserData import MediaUserData
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
 
@@ -45,38 +46,67 @@ class MyanimelistApi(ApiInterface):
     def _get_data(
             self,
             media_type: MediaType,
-            _id: int or Id
-    ) -> Optional[AnimeData]:  # TODO Manga
+            _id: Id
+    ) -> Optional[MediaData]:
         """
         Retrieves a single data object using the API
+        Actual implementation should be done by subclasses
         :param media_type: The media type to retrieve
-        :param _id: The ID to retrieve. May be either an int or an Id object
+        :param _id: The ID to retrieve.
         :return: The Anime Data or None if no valid data was found
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
+
+    def _get_user_data(
+            self,
+            media_type: MediaType,
+            _id: Id,
+            username: str
+    ) -> Optional[MediaUserData]:
+        """
+        Actual implementation of the get_user_data for each subclass
+        :param media_type: The media type to fetch
+        :param _id: The ID to retrieve
+        :param username: The user for which to fetch the data
+        :return: The user data for the entry or
+                 None if the user doesn't have such an entry
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    def _get_user_data_list(self, media_type: MediaType, username: str) \
+            -> List[MediaUserData]:
+        """
+        Retrieves a user's entire list of user data
+        Actual implementation method to be implemented by subclasses
+        :param media_type: The media type to fetch
+        :param username: The username for which to fetch the list
+        :return: The list of user data
+        """
+        raise NotImplementedError()  # pragma: no cover
 
     def _get_list_entry(
             self,
             media_type: MediaType,
-            _id: int or Id,
+            _id: Id,
             username: str
-    ) -> Optional[AnimeListEntry]:  # TODO Manga
+    ) -> Optional[MediaListEntry]:
         """
-        Retrieves a user list entry
+        Actual implementation of the get_list_entry for each subclass
         :param media_type: The media type to fetch
-        :param _id: The ID to retrieve. May be and int or an Id object
+        :param _id: The ID to retrieve
         :param username: The user for which to fetch the entry
         :return: The entry for the user or
                  None if the user doesn't have such an entry
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def _get_list(self, media_type: MediaType, username: str) \
-            -> List[AnimeListEntry]:  # TODO Manga
+            -> List[MediaListEntry]:
         """
         Retrieves a user's entire list
+        Actual implementation method to be implemented by subclasses
         :param media_type: The media type to fetch
         :param username: The username for which to fetch the list
         :return: The list of List entries
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover

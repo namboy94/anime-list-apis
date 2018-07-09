@@ -40,70 +40,6 @@ class AnilistApi(ApiInterface):
     Implements a wrapper around the anilist.co API
     """
 
-    media_query = """
-        id
-        idMal
-        title {
-            romaji
-            english
-            native
-        }
-        status
-        episodes
-        duration
-        coverImage {
-            large
-        }
-        startDate {
-            year
-            month
-            day
-        }
-        endDate {
-            year
-            month
-            day
-        }
-        relations {
-            edges {
-                node {
-                    id
-                    idMal
-                }
-                relationType
-            }
-        }
-    """
-    """
-    The GraphQL query for a Media object
-    """
-
-    media_list_entry_query = """
-        user {
-            name
-        }
-        score(format: POINT_100)
-        status
-        progress
-        progressVolumes
-        startedAt {
-            year
-            month
-            day
-        }
-        completedAt {
-            year
-            month
-            day
-        }
-        media {
-        """ + media_query + """
-        }
-    """
-    """
-    The query for a media list entry
-    """
-
     def __init__(self, cache: Cache = None, rate_limit_pause: float = 0.5):
         """
         Initializes the Anilist Api interface.
@@ -115,10 +51,12 @@ class AnilistApi(ApiInterface):
         """
         super().__init__(IdType.ANILIST, cache, rate_limit_pause)
 
+    # Implemented Abstract Methods --------------------------------------------
+
     def _get_data(
             self,
             media_type: MediaType,
-            _id: int or Id
+            _id: Id
     ) -> Optional[MediaData]:
         """
         Retrieves a single data object using the API
@@ -135,7 +73,7 @@ class AnilistApi(ApiInterface):
         query = """
             query ($id: Int, $type: MediaType) {
                 Media(""" + query_id_type + """: $id, type: $type) {
-                    """ + self.media_query + """
+                    """ + self.__media_query + """
                 }
             }
         """
@@ -147,6 +85,40 @@ class AnilistApi(ApiInterface):
             return None
         else:
             return self.__generate_media_data(media_type, data["Media"])
+
+    def _get_user_data(
+            self,
+            media_type: MediaType,
+            _id: Id,
+            username: str
+    ) -> Optional[MediaUserData]:
+        """
+        Actual implementation of the get_user_data for each subclass
+        :param media_type: The media type to fetch
+        :param _id: The ID to retrieve
+        :param username: The user for which to fetch the data
+        :return: The user data for the entry or
+                 None if the user doesn't have such an entry
+        """
+        entry = self._get_list_entry(media_type, _id, username)
+        if entry is not None:
+            return entry.get_user_data()
+        else:
+            return None
+
+    def _get_user_data_list(self, media_type: MediaType, username: str) \
+            -> List[MediaUserData]:
+        """
+        Retrieves a user's entire list of user data
+        Actual implementation method to be implemented by subclasses
+        :param media_type: The media type to fetch
+        :param username: The username for which to fetch the list
+        :return: The list of user data
+        """
+        return list(map(
+            lambda x: x.get_user_data(),
+            self._get_list(media_type, username)
+        ))
 
     def _get_list_entry(
             self,
@@ -171,9 +143,12 @@ class AnilistApi(ApiInterface):
         # 500 internal server errors.
         # Once this is fixed, the following should stand here:
         # inject = self.media_list_entry_query
-        inject = self.media_list_entry_query.replace(
-            self.media_query,
-            "id"
+        inject = self.__media_list_entry_query.replace(
+            self.__media_query,
+            """
+            id
+            idMal
+            """
         )
 
         query = """
@@ -198,7 +173,7 @@ class AnilistApi(ApiInterface):
             # media_data = self.__generate_media_data(
             #     media_type, result["MediaList"]["media"]
             # )
-            media_data = self.get_data(media_type, _id)
+            media_data = self._get_data(media_type, _id)
 
             user_data = self.__generate_media_user_data(
                 media_type, result["MediaList"]
@@ -219,7 +194,7 @@ class AnilistApi(ApiInterface):
                 MediaListCollection (userName: $username, type: $type) {
                     lists {
                         entries {
-                            """ + self.media_list_entry_query + """
+                            """ + self.__media_list_entry_query + """
                         }
                     }
                 }
@@ -248,6 +223,8 @@ class AnilistApi(ApiInterface):
                     entries.append(entry_cls(media_data, user_data))
             return entries
 
+    # Useful public methods ---------------------------------------------------
+
     def get_anilist_id_from_mal_id(self, media_type: MediaType,
                                    mal_id: int) -> Optional[int]:
         """
@@ -273,6 +250,8 @@ class AnilistApi(ApiInterface):
         else:
             return result["Media"]["id"]
 
+    # Helper Methods ----------------------------------------------------------
+
     @staticmethod
     def __generate_media_user_data(media_type: MediaType,
                                    data: Dict[str, Any]) -> MediaUserData:
@@ -282,7 +261,13 @@ class AnilistApi(ApiInterface):
         :param data: The data to parse as User Data
         :return: The generated MediaUserData object
         """
+        _id = Id({
+            IdType.ANILIST: data["media"]["id"],
+            IdType.MYANIMELIST: data["media"]["idMal"]
+        })
+
         serialized = {
+            "media_id": _id.serialize(),
             "media_type": media_type.name,
             "username": data["user"]["name"],
             "score": Score(data["score"], ScoreType.PERCENTAGE).serialize(),
@@ -409,23 +394,19 @@ class AnilistApi(ApiInterface):
         else:
             return result["data"]
 
-    def __resolve_query_id(self, media_type: MediaType, _id: int or Id,
+    def __resolve_query_id(self, media_type: MediaType, _id: Id,
                            allow_mal: bool) -> Optional[Tuple[int, IdType]]:
         """
         Calculates the ID value to use in a query
         :param media_type: The media type of the ID
-        :param _id: The ID, which may be an Id object or an int value
+        :param _id: The ID
         :param allow_mal: If True, may return a Myanimelist ID.
                           This will be signified by the second return value
                           being IdType.MYANIMELIST
         :return: A tuple consisting of the ID and the IDs type
         """
-        if not isinstance(_id, int):
-            mal_id = _id.get(IdType.MYANIMELIST)
-            anilist_id = _id.get(IdType.ANILIST)
-        else:
-            mal_id = None
-            anilist_id = _id
+        mal_id = _id.get(IdType.MYANIMELIST)
+        anilist_id = _id.get(IdType.ANILIST)
 
         id_type = IdType.ANILIST
         if anilist_id is None:
@@ -445,3 +426,69 @@ class AnilistApi(ApiInterface):
             return None
         else:
             return query_id, id_type
+
+    # Query definitions -------------------------------------------------------
+
+    __media_query = """
+            id
+            idMal
+            title {
+                romaji
+                english
+                native
+            }
+            status
+            episodes
+            duration
+            coverImage {
+                large
+            }
+            startDate {
+                year
+                month
+                day
+            }
+            endDate {
+                year
+                month
+                day
+            }
+            relations {
+                edges {
+                    node {
+                        id
+                        idMal
+                    }
+                    relationType
+                }
+            }
+        """
+    """
+    The GraphQL query for a Media object
+    """
+
+    __media_list_entry_query = """
+            user {
+                name
+            }
+            score(format: POINT_100)
+            status
+            progress
+            progressVolumes
+            startedAt {
+                year
+                month
+                day
+            }
+            completedAt {
+                year
+                month
+                day
+            }
+            media {
+            """ + __media_query + """
+            }
+        """
+    """
+    The query for a media list entry
+    """

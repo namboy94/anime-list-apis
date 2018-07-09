@@ -27,6 +27,7 @@ from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.ConsumingStatus import ConsumingStatus
 from anime_list_apis.models.MediaUserData import MediaUserData, AnimeUserData,\
     MangaUserData
+from anime_list_apis.models.attributes.Id import IdType, Id
 
 
 class TestMediaUserData(TestCase):
@@ -41,6 +42,7 @@ class TestMediaUserData(TestCase):
         :return: The generated AnimeUserData object
         """
         return AnimeUserData(
+            Id({IdType.MYANIMELIST: 1}),
             "namboy94",
             Score(55, ScoreType.PERCENTAGE),
             ConsumingStatus.COMPLETED,
@@ -56,6 +58,7 @@ class TestMediaUserData(TestCase):
         :return: The generated MangaUserData object
         """
         return MangaUserData(
+            Id({IdType.MYANIMELIST: 1}),
             "namboy94",
             Score(55, ScoreType.PERCENTAGE),
             ConsumingStatus.COMPLETED,
@@ -74,6 +77,7 @@ class TestMediaUserData(TestCase):
         :return: The serialized data
         """
         return {
+            "media_id": Id({IdType.MYANIMELIST: 1}).serialize(),
             "media_type": "ANIME",
             "username": "namboy94",
             "score": Score(55, ScoreType.PERCENTAGE).serialize(),
@@ -92,6 +96,7 @@ class TestMediaUserData(TestCase):
         :return: The serialized data
         """
         return {
+            "media_id": Id({IdType.MYANIMELIST: 1}).serialize(),
             "media_type": "MANGA",
             "username": "namboy94",
             "score": Score(55, ScoreType.PERCENTAGE).serialize(),

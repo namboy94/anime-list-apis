@@ -18,6 +18,8 @@ along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
 from typing import Dict, List, Tuple, Set, Optional
+
+from anime_list_apis.models.CacheAble import CacheAble, CacheModelType
 from anime_list_apis.models.Serializable import MediaSerializable
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id
@@ -28,10 +30,38 @@ from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 
 
 # noinspection PyAbstractClass
-class MediaData(MediaSerializable):
+class MediaData(MediaSerializable, CacheAble):
     """
     Class that models user-independent media data
     """
+
+    def get_id(self) -> Id:
+        """
+        Retrieves the cache entry's ID
+        :return: The ID
+        """
+        return self.id
+
+    def get_media_type(self) -> MediaType:
+        """
+        Retrieves the media type
+        :return: The media type
+        """
+        return self.media_type
+
+    def get_username(self) -> Optional[str]:
+        """
+        Retrieves the username, if applicable. Else None
+        :return: The username or None if not applicable
+        """
+        return None
+
+    def get_model_type(self) -> CacheModelType:
+        """
+        Retrieves the cache model type
+        :return: The model type
+        """
+        return CacheModelType.MEDIA_DATA
 
     def __init__(
             self,

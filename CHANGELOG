@@ -1,3 +1,6 @@
+V 0.2.1:
+  - Added is_in_list methods
+  - Added relation fetching methods
 V 0.2.0:
   - Simplified caching objects
   - Added fresh options to API Interface

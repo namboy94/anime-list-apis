@@ -315,6 +315,45 @@ class TestAnilistApi(TestCase):
         self.assertNotEqual(fresh_user, user_data)
         self.assertEqual(fresh_user, original_user)
 
+    def test_fetching_related_data(self):
+        """
+        Tests fetching data for related data
+        :return: None
+        """
+        _id = Id({
+             IdType.KITSU: 5646,
+             IdType.MYANIMELIST: 9253,
+             IdType.ANILIST: 9253
+         })
+        entry = self.api.get_anime_list_entry(_id, self.username)
+        related = self.api.get_related_data([_id])
+
+        self.assertTrue(entry.get_media_data() in related)
+        for relation in entry.relations:
+            filtered = list(filter(
+                lambda x: x.id.get(self.api.id_type) == relation.id,
+                related
+            ))
+            self.assertEqual(len(filtered), 1)
+
+    def test_checking_if_in_list(self):
+        """
+        Tests the is_in_list() method
+        :return: None
+        """
+        in_list = {
+             IdType.KITSU: 5646,
+             IdType.MYANIMELIST: 9253,
+             IdType.ANILIST: 9253
+         }
+        out_list = Id({
+            IdType.KITSU: 45257,
+            IdType.MYANIMELIST: 539,
+            IdType.ANILIST: 75257
+        })
+        self.assertTrue(self.api.in_anime_list(in_list, self.username))
+        self.assertFalse(self.api.in_manga_list(out_list, self.username))
+
 
 class TestAnilistApiSpecific(TestCase):
     """

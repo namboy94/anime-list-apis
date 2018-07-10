@@ -326,12 +326,16 @@ class TestAnilistApi(TestCase):
              IdType.ANILIST: 9253
          })
         entry = self.api.get_anime_list_entry(_id, self.username)
-        related = self.api.get_related_data([_id])
+        related = self.api.get_related_data([entry.get_media_data()])
+        related_two = self.api.get_related_data(entry.get_media_data())
+
+        self.assertEqual(related, related_two)
 
         self.assertTrue(entry.get_media_data() in related)
         for relation in entry.relations:
             filtered = list(filter(
-                lambda x: x.id.get(self.api.id_type) == relation.id,
+                lambda x: x.id.get(self.api.id_type) ==
+                relation.id.get(self.api.id_type),
                 related
             ))
             self.assertEqual(len(filtered), 1)
@@ -351,8 +355,8 @@ class TestAnilistApi(TestCase):
             IdType.MYANIMELIST: 539,
             IdType.ANILIST: 75257
         })
-        self.assertTrue(self.api.in_anime_list(in_list, self.username))
-        self.assertFalse(self.api.in_manga_list(out_list, self.username))
+        self.assertTrue(self.api.is_in_anime_list(in_list, self.username))
+        self.assertFalse(self.api.is_in_manga_list(out_list, self.username))
 
 
 class TestAnilistApiSpecific(TestCase):

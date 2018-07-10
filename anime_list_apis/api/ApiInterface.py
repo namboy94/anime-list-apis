@@ -168,6 +168,44 @@ class ApiInterface:
             self.__cache(entry, dont_write=True)
         return entries
 
+    def is_in_list(
+            self,
+            media_type: MediaType,
+            _id: int or Id,
+            username: str,
+            fresh: bool = False
+    ) -> bool:
+        """
+        Checks if an entry is in a user's list
+        :param media_type: The media type to check for
+        :param _id: The ID to check for
+        :param username: The username for which to check
+        :param fresh: Indicates if the most up-to-date results should be used
+        :return: True if the id is in the list, False otherwise
+        """
+        return self.get_user_data(media_type, _id, username, fresh) is not None
+
+    def get_related_data(
+            self,
+            datas: List[MediaData] or MediaData,
+            fresh: bool = False
+    ) -> List[MediaData]:
+        """
+        Retrieves related data for either a list of MediaData objects or
+        a single MediaData object
+        :param datas: A list of MediaData objects (or a single one)
+        :param fresh: Indicates if the most up-to-date results should be used
+        :return: A list of related media data
+        """
+        if not isinstance(datas, list):
+            datas = [datas]
+
+        related = []
+        for data in datas:
+            self.__append_related_data(data, related, fresh)
+
+        return related
+
     # Abstract Methods --------------------------------------------------------
 
     def _get_data(
@@ -298,6 +336,21 @@ class ApiInterface:
         # noinspection PyTypeChecker
         return self.get_list(MediaType.ANIME, username)
 
+    def is_in_anime_list(
+            self,
+            _id: int or Id,
+            username: str,
+            fresh: bool = False
+    ) -> bool:
+        """
+        Checks if an entry is in a user's list
+        :param _id: The ID to check for
+        :param username: The username for which to check
+        :param fresh: Indicates if the most up-to-date results should be used
+        :return: True if the id is in the list, False otherwise
+        """
+        return self.is_in_list(MediaType.ANIME, _id, username, fresh)
+
     def get_manga_data(self, _id: int or Id, fresh: bool = False) \
             -> Optional[MangaData]:
         """
@@ -356,6 +409,21 @@ class ApiInterface:
         # noinspection PyTypeChecker
         return self.get_list(MediaType.MANGA, username)
 
+    def is_in_manga_list(
+            self,
+            _id: int or Id,
+            username: str,
+            fresh: bool = False
+    ) -> bool:
+        """
+        Checks if an entry is in a user's manga list
+        :param _id: The ID to check for
+        :param username: The username for which to check
+        :param fresh: Indicates if the most up-to-date results should be used
+        :return: True if the id is in the list, False otherwise
+        """
+        return self.is_in_list(MediaType.MANGA, _id, username, fresh)
+
     # Helper Methods ----------------------------------------------------------
 
     def __cache(self, data: Optional[CacheAble], dont_write: bool = True):
@@ -380,3 +448,33 @@ class ApiInterface:
         if isinstance(_id, int):
             _id = Id({self.id_type: _id})
         return _id
+
+    def __append_related_data(
+            self,
+            data: MediaData,
+            previous: List[MediaData],
+            fresh: bool = False
+    ):
+        """
+        Retrieves the related MediaData objects for a given MediaData object.
+        This method works in-place.
+        :param data: The data for which to retrieve the related data
+        :param previous: The previously found data, used in recursive calls
+        :param fresh: Indicates if the most up-to-date results should be used
+        :return: None
+        """
+        previous.append(data)
+
+        for relation in data.relations:
+
+            filtered = list(filter(
+                lambda x: x.id == relation.dest, previous
+            ))
+
+            if len(filtered) == 1:  # If already in list, skip
+                continue
+            else:
+                # In-place recursive method
+                relation_data = \
+                    self.get_data(relation.dest_type, relation.dest, fresh)
+                self.__append_related_data(relation_data, previous, fresh)

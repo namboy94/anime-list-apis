@@ -1,3 +1,5 @@
+V 0.2.2:
+  - Added invalidation methods to cache
 V 0.2.1:
   - Added is_in_list methods
   - Added relation fetching methods

@@ -298,6 +298,108 @@ class Cache:
             username
         )
 
+    def invalidate(
+            self,
+            model_type: CacheModelType,
+            site_type: IdType,
+            media_type: MediaType,
+            _id: int or Id,
+            username: Optional[str] = None
+    ):
+        """
+        Invalidates a cache entry
+        :param model_type: The model type of the entry to invalidate
+        :param site_type: The site type of the entry to invalidate
+        :param media_type: The media type of the entry
+        :param _id: The ID of the entry
+        :param username: The username for which to invalidate the entry
+        :return: None
+        """
+        if model_type == CacheModelType.MEDIA_LIST_ENTRY:
+            self.invalidate(
+                CacheModelType.MEDIA_DATA,
+                site_type,
+                media_type,
+                _id
+            )
+            self.invalidate(
+                CacheModelType.MEDIA_USER_DATA,
+                site_type,
+                media_type,
+                _id,
+                username
+            )
+        else:
+            _id = self.__resolve_id(site_type, _id)
+            tag = self.generate_id_tag(media_type, _id, username)
+
+            if tag in self.__cache[model_type][site_type]:
+                self.__cache[model_type][site_type].pop(tag)
+
+            # Write to make sure that cache entry is no longer accessible
+            self.write()
+
+    def invalidate_media_data(
+            self,
+            site_type: IdType,
+            media_type: MediaType,
+            _id: int or Id
+    ):
+        """
+        Invalidates a media entry
+        :param site_type: The site type of the entry
+        :param media_type: The media type of the entry
+        :param _id: The ID of the entry
+        :return: None
+        """
+        self.invalidate(CacheModelType.MEDIA_DATA, site_type, media_type, _id)
+
+    def invalidate_media_user_data(
+            self,
+            site_type: IdType,
+            media_type: MediaType,
+            _id: int or Id,
+            username: str
+    ):
+        """
+        Invalidates a user data entry
+        :param site_type: The site type of the entry
+        :param media_type: The media type of the entry
+        :param _id: The ID of the entry
+        :param username: The user for which to invalidate the entry
+        :return: None
+        """
+        self.invalidate(
+            CacheModelType.MEDIA_USER_DATA,
+            site_type,
+            media_type,
+            _id,
+            username
+        )
+
+    def invalidate_media_list_entry(
+            self,
+            site_type: IdType,
+            media_type: MediaType,
+            _id: int or Id,
+            username: str
+    ):
+        """
+        Invalidates a list entry
+        :param site_type: The site type of the entry
+        :param media_type: The media type of the entry
+        :param _id: The ID of the entry
+        :param username: The user for which to invalidate the entry
+        :return: None
+        """
+        self.invalidate(
+            CacheModelType.MEDIA_LIST_ENTRY,
+            site_type,
+            media_type,
+            _id,
+            username
+        )
+
     @staticmethod
     def __generate_empty_cache() \
             -> Dict[

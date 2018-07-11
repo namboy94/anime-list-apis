@@ -312,3 +312,50 @@ class TestCacher(TestCase):
                 entry.get_username()
             )
         )
+
+    def test_invalidating_cache(self):
+        """
+        Tests invalidating cache entries
+        :return: None
+        """
+        entry = TestMediaListEntry.generate_sample_anime_entry()
+        _id, media, user = entry.id, entry.media_type, entry.username
+        site = IdType.MYANIMELIST
+
+        def check(media_valid: bool, user_valid: bool, entry_valid):
+            self.assertEqual(
+                self.cache.get_media_data(site, media, _id)
+                is not None,
+                media_valid
+            )
+            self.assertEqual(
+                self.cache.get_media_user_data(site, media, _id, user)
+                is not None,
+                user_valid
+            )
+            self.assertEqual(
+                self.cache.get_media_list_entry(site, media, _id, user)
+                is not None,
+                entry_valid
+            )
+
+        self.cache.add(IdType.MYANIMELIST, entry)
+        check(True, True, True)
+
+        self.cache.invalidate_media_data(site, media, _id)
+        check(False, True, False)
+
+        self.cache.invalidate_media_user_data(site, media, _id, user)
+        check(False, False, False)
+
+        self.cache.add(IdType.MYANIMELIST, entry)
+
+        self.cache.invalidate_media_user_data(site, media, _id, user)
+        check(True, False, False)
+
+        self.cache.add(IdType.MYANIMELIST, entry)
+
+        self.cache.invalidate_media_list_entry(site, media, _id, user)
+        check(False, False, False)
+
+        self.cache.invalidate_media_list_entry(site, media, _id, user)

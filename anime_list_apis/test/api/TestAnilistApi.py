@@ -190,8 +190,8 @@ class TestAnilistApi(TestCase):
         Tests retrieving an anime list for an invalid user
         :return: None
         """
-        self.assertEqual([], self.api.get_anime_list(""))
-        self.assertEqual([], self.api.get_manga_list(""))
+        self.assertEqual([], self.api.get_anime_list(self.username + "test"))
+        self.assertEqual([], self.api.get_manga_list(self.username + "test"))
 
     def test_fetching_with_invalid_id_type(self):
         """

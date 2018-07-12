@@ -359,3 +359,20 @@ class TestCacher(TestCase):
         check(False, False, False)
 
         self.cache.invalidate_media_list_entry(site, media, _id, user)
+
+    def test_caching_primitive_data(self):
+        """
+        Tests caching primitive data
+        :return: None
+        """
+        self.cache.add_primitive(IdType.ANILIST, "one", 1)
+        self.assertEqual(1, self.cache.get_primitive(IdType.ANILIST, "one"))
+        self.assertEqual(None, self.cache.get_primitive(IdType.ANILIST, "two"))
+
+        self.cache.write()
+        self.cache.load()
+        self.assertEqual(1, self.cache.get_primitive(IdType.ANILIST, "one"))
+
+        self.cache.expiration = 0
+        self.assertEqual(None, self.cache.get_primitive(IdType.ANILIST, "one"))
+        self.cache.expiration = 60000

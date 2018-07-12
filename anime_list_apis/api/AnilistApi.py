@@ -84,7 +84,13 @@ class AnilistApi(ApiInterface):
         if data is None:
             return None
         else:
-            return self.__generate_media_data(media_type, data["Media"])
+            data = self.__generate_media_data(media_type, data["Media"])
+            self.__cache_mal_to_anilist_map(
+                media_type,
+                data.id.get(IdType.MYANIMELIST),
+                data.id.get(IdType.ANILIST)
+            )
+            return data
 
     def _get_user_data(
             self,
@@ -220,13 +226,23 @@ class AnilistApi(ApiInterface):
                         media_type,
                         entry
                     )
+
+                    self.__cache_mal_to_anilist_map(
+                        media_type,
+                        media_data.id.get(IdType.MYANIMELIST),
+                        media_data.id.get(IdType.ANILIST)
+                    )
+
                     entries.append(entry_cls(media_data, user_data))
             return entries
 
     # Useful public methods ---------------------------------------------------
 
-    def get_anilist_id_from_mal_id(self, media_type: MediaType,
-                                   mal_id: int) -> Optional[int]:
+    def get_anilist_id_from_mal_id(
+            self,
+            media_type: MediaType,
+            mal_id: int
+    ) -> Optional[int]:
         """
         Retrieves an anilist ID from a myanimelist ID
         :param media_type: The media type of the myanimelist ID
@@ -234,6 +250,12 @@ class AnilistApi(ApiInterface):
         :return: The anilist ID. May be None if myanimelist ID has no
                  equivalent on anilist
         """
+        cached = self.cache.get_primitive(
+            self.id_type, "mal-" + media_type.name + "-" + str(mal_id)
+        )
+        if cached is not None:
+            return cached
+
         query = """
             query ($mal_id: Int, $type: MediaType) {
                 Media(idMal: $mal_id, type: $type) {
@@ -248,7 +270,9 @@ class AnilistApi(ApiInterface):
         if result is None:
             return None
         else:
-            return result["Media"]["id"]
+            anilist_id = result["Media"]["id"]
+            self.__cache_mal_to_anilist_map(media_type, mal_id, anilist_id)
+            return anilist_id
 
     # Helper Methods ----------------------------------------------------------
 
@@ -426,6 +450,25 @@ class AnilistApi(ApiInterface):
             return None
         else:
             return query_id, id_type
+
+    def __cache_mal_to_anilist_map(
+            self,
+            media_type: MediaType,
+            mal_id: int,
+            anilist_id: int
+    ):
+        """
+        Caches an anilist ID mapped to a myanimelist ID
+        :param media_type: The media type to map
+        :param mal_id: The myanimelist ID to map
+        :param anilist_id: The anilist ID to map
+        :return: None
+        """
+        self.cache.add_primitive(
+            self.id_type,
+            "mal-" + media_type.name + "-" + str(mal_id),
+            anilist_id
+        )
 
     # Query definitions -------------------------------------------------------
 

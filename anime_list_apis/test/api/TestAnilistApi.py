@@ -190,8 +190,8 @@ class TestAnilistApi(TestCase):
         Tests retrieving an anime list for an invalid user
         :return: None
         """
-        self.assertEqual([], self.api.get_anime_list(""))
-        self.assertEqual([], self.api.get_manga_list(""))
+        self.assertEqual([], self.api.get_anime_list(self.username + "test"))
+        self.assertEqual([], self.api.get_manga_list(self.username + "test"))
 
     def test_fetching_with_invalid_id_type(self):
         """
@@ -411,6 +411,22 @@ class TestAnilistApiSpecific(TestCase):
             self.api.get_anilist_id_from_mal_id(MediaType.ANIME, mal),
             anilist
         )
+
+        # Cached
+        self.assertEqual(
+            self.cache.get_primitive(self.api.id_type, "mal-ANIME-30484"),
+            anilist
+        )
+
+        def raise_value_error():
+            raise ValueError()
+
+        # Makes sure that cached value is used from now on
+        with mock.patch("requests.post", new=raise_value_error):
+            self.assertEqual(
+                self.api.get_anilist_id_from_mal_id(MediaType.ANIME, mal),
+                anilist
+            )
 
     def test_getting_anilist_info_with_invalid_mal_id(self):
         """

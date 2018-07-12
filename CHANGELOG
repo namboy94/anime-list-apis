@@ -1,3 +1,6 @@
+V 0.3.0:
+  - Added primitive data caching
+  - Myanimelist to Anilist ID maps are now being cached
 V 0.2.2:
   - Added invalidation methods to cache
 V 0.2.1:

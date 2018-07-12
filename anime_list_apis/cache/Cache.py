@@ -21,7 +21,7 @@ import os
 import time
 import json
 from copy import deepcopy
-from typing import Dict, Optional
+from typing import Dict, Any, Optional
 from anime_list_apis.models.Serializable import Serializable
 from anime_list_apis.models.attributes.Id import IdType, Id
 from anime_list_apis.models.attributes.MediaType import MediaType
@@ -37,6 +37,7 @@ class Cache:
     """
 
     model_map = {
+        CacheModelType.DATA: None,
         CacheModelType.MEDIA_DATA: MediaData,
         CacheModelType.MEDIA_USER_DATA: MediaUserData,
         CacheModelType.MEDIA_LIST_ENTRY: MediaListEntry
@@ -96,15 +97,21 @@ class Cache:
             for site_type in self.__cache[model_type]:
                 serialized[model_type.name][site_type.name] = {}
 
-                for tag in self.__cache[model_type][site_type]:
-                    serialized[model_type.name][site_type.name][tag] = {
-                        "timestamp":
-                            self.__cache[model_type][site_type][tag]
-                            ["timestamp"],
-                        "data":
-                            self.__cache[model_type][site_type][tag]
-                            ["data"].serialize()
-                    }
+                if model_type == CacheModelType.DATA:
+                    serialized[model_type.name][site_type.name] = \
+                        self.__cache[model_type][site_type]
+
+                else:
+
+                    for tag in self.__cache[model_type][site_type]:
+                        serialized[model_type.name][site_type.name][tag] = {
+                            "timestamp":
+                                self.__cache[model_type][site_type][tag]
+                                ["timestamp"],
+                            "data":
+                                self.__cache[model_type][site_type][tag]
+                                ["data"].serialize()
+                        }
 
         with open(self.cache_file, "w") as f:
             json.dump(
@@ -132,11 +139,28 @@ class Cache:
             for _site_type, site_data in cache_data.items():
                 site_type = IdType[_site_type]
 
-                for tag, entry in site_data.items():
-                    self.__cache[model_type][site_type][tag] = {
-                        "timestamp": entry["timestamp"],
-                        "data": data_class.deserialize(entry["data"])
-                    }
+                if model_type == CacheModelType.DATA:
+                    self.__cache[model_type][site_type] = site_data
+
+                else:
+                    for tag, entry in site_data.items():
+                        self.__cache[model_type][site_type][tag] = {
+                            "timestamp": entry["timestamp"],
+                            "data": data_class.deserialize(entry["data"])
+                        }
+
+    def add_primitive(self, site_type: IdType, key: str, value: Any):
+        """
+        Adds a primitive data object to the cache
+        :param site_type: The site for which to cache
+        :param key: The key of the value
+        :param value: the value to cache
+        :return: None
+        """
+        self.__cache[CacheModelType.DATA][site_type][key] = {
+            "timestamp": time.time(),
+            "value": value
+        }
 
     def add(
             self,
@@ -177,6 +201,25 @@ class Cache:
 
             if self.change_count >= self.write_after:
                 self.write()
+
+    def get_primitive(self, site_type: IdType, key: str) -> Optional[Any]:
+        """
+        Retrieves a primitive data object from the cache
+        :param site_type: The site for which to get the cached data
+        :param key: The key to retrieve
+        :return: The cached primitive data object or None if no entry in cache
+        """
+        if key in self.__cache[CacheModelType.DATA][site_type]:
+
+            entry = self.__cache[CacheModelType.DATA][site_type][key]
+
+            if time.time() - entry["timestamp"] > self.expiration >= 0:
+                self.__cache[CacheModelType.DATA][site_type].pop(key)
+                return None
+            else:
+                return entry["value"]
+        else:
+            return None
 
     def get(
             self,
@@ -428,10 +471,15 @@ class Cache:
 
         The CacheModelType 'MediaListEntry' will be split into their
         'MediaData' and 'MediaUserData' components, so there will be no
-        separate entry for them
+        separate entry for them.
+        Additionally, a 'data' entry will be added for caching various
+        primitive data
         :return: The generated cache dictionary
         """
-        cache = {}
+        cache = {CacheModelType.DATA: {}}
+        for site_type in IdType:
+            cache[CacheModelType.DATA][site_type] = {}
+
         for model_type in CacheModelType:
 
             if model_type == CacheModelType.MEDIA_LIST_ENTRY:

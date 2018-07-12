@@ -28,6 +28,7 @@ class CacheModelType(Enum):
     """
     An enumeration that keeps track of different cache-able model types
     """
+    DATA = 0
     MEDIA_DATA = 1
     MEDIA_USER_DATA = 2
     MEDIA_LIST_ENTRY = 3

@@ -21,8 +21,8 @@ import json
 from copy import deepcopy
 from unittest import TestCase
 from typing import Dict, List, Set, Tuple, Optional
-
 from anime_list_apis.models.attributes.MediaType import MediaType
+from anime_list_apis.models.attributes.MediaFormat import MediaFormat
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
 from anime_list_apis.models.MediaData import MediaData, AnimeData, MangaData
@@ -43,6 +43,7 @@ class TestMediaData(TestCase):
         :return: The generated anime data object
         """
         return AnimeData(
+            MediaFormat.TV,
             Id({IdType.MYANIMELIST: 1}),
             Title({TitleType.ROMAJI: "Test"}),
             [Relation(
@@ -67,6 +68,7 @@ class TestMediaData(TestCase):
         :return: The generated manga data object
         """
         return MangaData(
+            MediaFormat.MANGA,
             Id({IdType.MYANIMELIST: 1}),
             Title({TitleType.ROMAJI: "Test"}),
             [Relation(
@@ -94,6 +96,7 @@ class TestMediaData(TestCase):
         """
         return {
             "media_type": "ANIME",
+            "format": MediaFormat.TV.name,
             "id": Id({IdType.MYANIMELIST: 1}).serialize(),
             "title": Title({TitleType.ROMAJI: "Test"}).serialize(),
             "relations": [
@@ -123,6 +126,7 @@ class TestMediaData(TestCase):
         """
         return {
             "media_type": "MANGA",
+            "format": MediaFormat.MANGA.name,
             "id": Id({IdType.MYANIMELIST: 1}).serialize(),
             "title": Title({TitleType.ROMAJI: "Test"}).serialize(),
             "relations": [

@@ -85,6 +85,7 @@ class MediaListEntry(MediaSerializable, CacheAble):
             raise ValueError("Mismatching User and Media Data")
 
         self.media_type = media_type
+        self.format = media_data.format
         self.id = media_data.id
         self.title = media_data.title
         self.relations = media_data.relations
@@ -248,6 +249,7 @@ class AnimeListEntry(MediaListEntry):
         :raises TypeError: If any of the internal parameters has a wrong type
         """
         return AnimeData(
+            self.format,
             self.id,
             self.title,
             self.relations,
@@ -301,6 +303,7 @@ class MangaListEntry(MediaListEntry):
         :raises TypeError: If any of the internal parameters has a wrong type
         """
         return MangaData(
+            self.format,
             self.id,
             self.title,
             self.relations,

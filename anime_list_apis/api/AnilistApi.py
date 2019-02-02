@@ -30,6 +30,7 @@ from anime_list_apis.models.MediaUserData import MediaUserData
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id, IdType
 from anime_list_apis.models.attributes.MediaType import MediaType
+from anime_list_apis.models.attributes.MediaFormat import MediaFormat
 from anime_list_apis.models.attributes.Relation import Relation, RelationType
 from anime_list_apis.models.attributes.Score import Score, ScoreType
 from anime_list_apis.models.attributes.Title import Title, TitleType
@@ -326,6 +327,7 @@ class AnilistApi(ApiInterface):
         :param data: The data to convert into an AnimeData object
         :return: The generated AnimeData object
         """
+        _format = MediaFormat(data["format"])
         _id = Id({
             IdType.ANILIST: data["id"],
             IdType.MYANIMELIST: data["idMal"]
@@ -363,6 +365,7 @@ class AnilistApi(ApiInterface):
 
         serialized = {
             "media_type": media_type.name,
+            "format": _format.name,
             "id": _id.serialize(),
             "title": title.serialize(),
             "relations": relations,
@@ -480,6 +483,7 @@ class AnilistApi(ApiInterface):
                 english
                 native
             }
+            format
             status
             episodes
             duration

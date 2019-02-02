@@ -24,6 +24,7 @@ from anime_list_apis.models.Serializable import MediaSerializable
 from anime_list_apis.models.attributes.Date import Date
 from anime_list_apis.models.attributes.Id import Id
 from anime_list_apis.models.attributes.MediaType import MediaType
+from anime_list_apis.models.attributes.MediaFormat import MediaFormat
 from anime_list_apis.models.attributes.Title import Title
 from anime_list_apis.models.attributes.Relation import Relation
 from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
@@ -66,6 +67,7 @@ class MediaData(MediaSerializable, CacheAble):
     def __init__(
             self,
             media_type: MediaType,
+            _format: MediaFormat,
             _id: Id,
             title: Title,
             relations: List[Relation],
@@ -80,6 +82,7 @@ class MediaData(MediaSerializable, CacheAble):
         releasing yet.
         This constructor initializes all common values of all media types.
         :param media_type: The type of media
+        :param _format: The media format
         :param _id: The ID of the media
         :param title: The title of the media
         :param relations: The relations of the media to other media
@@ -90,6 +93,7 @@ class MediaData(MediaSerializable, CacheAble):
         :raises TypeError: If any of the parameters has a wrong type
         """
         self.ensure_type(media_type, MediaType)
+        self.ensure_type(_format, MediaFormat)
         self.ensure_type(_id, Id)
         self.ensure_type(title, Title)
         self.ensure_type(relations, list)
@@ -100,6 +104,7 @@ class MediaData(MediaSerializable, CacheAble):
         self.ensure_type(cover_url, str, True)
 
         self.media_type = media_type
+        self.format = _format
         self.id = _id
         self.title = title
         self.relations = relations
@@ -121,6 +126,7 @@ class MediaData(MediaSerializable, CacheAble):
 
         return {
             "media_type": self.media_type.name,
+            "format": self.format.name,
             "id": self.id.serialize(),
             "title": self.title.serialize(),
             "relations": list(map(lambda x: x.serialize(), self.relations)),
@@ -153,6 +159,7 @@ class MediaData(MediaSerializable, CacheAble):
         """
         deserialized = {
             "media_type": MediaType[data["media_type"]],
+            "format": MediaFormat[data["format"]],
             "id": Id.deserialize(data["id"]),
             "title": Title.deserialize(data["title"]),
             "relations": list(map(
@@ -180,8 +187,8 @@ class MediaData(MediaSerializable, CacheAble):
         :return: The order of common parameters
         """
         return [
-            "id", "title", "relations", "releasing_status", "releasing_start",
-            "releasing_end", "cover_url"
+            "format", "id", "title", "relations", "releasing_status",
+            "releasing_start", "releasing_end", "cover_url"
         ]
 
 
@@ -192,6 +199,7 @@ class AnimeData(MediaData):
 
     def __init__(
             self,
+            _format: MediaFormat,
             _id: Id,
             title: Title,
             relations: List[Relation],
@@ -204,6 +212,7 @@ class AnimeData(MediaData):
     ):
         """
         Initializes the Anime Data object and checks for type issues
+        :param _format: The media format
         :param _id: The ID of the anime
         :param title: The title of the anime
         :param relations: The relations of the anime
@@ -217,6 +226,7 @@ class AnimeData(MediaData):
         """
         super().__init__(
             MediaType.ANIME,
+            _format,
             _id,
             title,
             relations,
@@ -274,6 +284,7 @@ class MangaData(MediaData):
 
     def __init__(
             self,
+            _format: MediaFormat,
             _id: Id,
             title: Title,
             relations: List[Relation],
@@ -286,6 +297,7 @@ class MangaData(MediaData):
     ):
         """
         Initializes the Manga Data object and checks for type issues
+        :param _format: The media format
         :param _id: The ID of the manga
         :param title: The title of the manga
         :param relations: The relations of the manga
@@ -299,6 +311,7 @@ class MangaData(MediaData):
         """
         super().__init__(
             MediaType.MANGA,
+            _format,
             _id,
             title,
             relations,

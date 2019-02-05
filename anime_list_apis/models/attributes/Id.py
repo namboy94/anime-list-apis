@@ -105,3 +105,21 @@ class Id(Serializable):
             des[IdType[key]] = value
         generated = cls(des)  # type: Id
         return generated
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Checks for equality with another object. Needed to make IDs hashable
+        :param other: The other object
+        :return: True if equal, False otherwise
+        """
+        if not isinstance(other, type(self)):
+            return False
+        else:
+            return self.serialize() == other.serialize()
+
+    def __hash__(self) -> int:
+        """
+        Generates a hash so that IDs can be used as keys in dictionaries
+        :return: The hash
+        """
+        return hash(str(self))

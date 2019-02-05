@@ -1,0 +1,148 @@
+"""LICENSE
+Copyright 2018 Hermann Krumrey <hermann@krumreyh.com>
+
+This file is part of anime-list-apis.
+
+anime-list-apis is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+anime-list-apis is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
+LICENSE"""
+
+import argparse
+from typing import List
+from colorama import Fore, Style
+from anime_list_apis.api.ApiInterface import ApiInterface
+from anime_list_apis.api.AnilistApi import AnilistApi
+from anime_list_apis.models.attributes.Relation import Relation, RelationType
+from anime_list_apis.models.MediaListEntry import MediaListEntry
+from anime_list_apis.models.attributes.MediaType import MediaType
+from anime_list_apis.models.attributes.ReleasingStatus import ReleasingStatus
+from anime_list_apis.models.attributes.ConsumingStatus import ConsumingStatus
+
+
+def main():
+    """
+    The main method of the script
+    :return: None
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("service", choices={"anilist"},
+                        help="The anime list service to check")
+    parser.add_argument("username", help="The username to check")
+    args = parser.parse_args()
+    service = args.service
+    username = args.username
+
+    service = {"anilist": AnilistApi}[service]()
+    anime_list = service.get_anime_list(username)
+    manga_list = service.get_manga_list(username)
+
+    check_dates(anime_list)
+    check_dates(manga_list)
+    check_relations(service, MediaType.ANIME, anime_list)
+
+
+def check_dates(media_list: List[MediaListEntry]):
+    """
+    Makes sure that all watching start and end values make sense
+    :param media_list: The media list to check
+    :return: None
+    """
+    for entry in media_list:
+
+        if entry.consuming_status in [
+            ConsumingStatus.COMPLETED,
+            ConsumingStatus.CURRENT,
+            ConsumingStatus.DROPPED,
+            ConsumingStatus.PAUSED,
+            ConsumingStatus.REPEATING
+        ]:
+            if entry.consuming_start is None:
+                error("No start date for {}".format(entry.title))
+
+        if entry.consuming_status == ConsumingStatus.COMPLETED:
+            if entry.consuming_end is None:
+                error("No end date for {}".format(entry.title))
+            if str(entry.consuming_start) > str(entry.consuming_end):
+                error("Start date and end date are swapped for {}".format(
+                    entry.title
+                ))
+
+
+def check_relations(
+        service: ApiInterface,
+        media_type: MediaType,
+        media_list: List[MediaListEntry]
+):
+    """
+    Makes sure that all relations are satisfied
+    :param service: The API service to use for additional data requests
+    :param media_type: The type of media to check
+    :param media_list: The media list to check
+    :return: None
+    """
+    idmap = {}
+    for entry in media_list:
+        idmap[entry.id] = entry
+
+    for entry in media_list:
+
+        if entry.consuming_status != ConsumingStatus.COMPLETED:
+            continue
+
+        def filter_function(_relation: Relation) -> bool:
+            valid = True
+            valid = valid and _relation.type in [
+                RelationType.PARENT,
+                RelationType.PREQUEL,
+                RelationType.SEQUEL,
+                RelationType.SIDE_STORY,
+                RelationType.SUMMARY,
+                RelationType.OTHER,
+                RelationType.ALTERNATIVE,
+                RelationType.SPIN_OFF
+            ]
+            valid = valid and _relation.source_type == _relation.dest_type
+            return valid
+
+        relations = list(filter(filter_function, entry.relations))
+
+        for relation in relations:
+            relation_entry = idmap.get(relation.dest)
+            if relation_entry is None:
+                missing_data = service.get_data(media_type, relation.dest)
+                if missing_data.releasing_status == ReleasingStatus.FINISHED:
+                    error("Missing entry: {}".format(missing_data.title))
+            else:
+                pass
+
+
+def error(message: str):
+    """
+    Prints an error message
+    :param message: The message to print
+    :return: None
+    """
+    print(Fore.LIGHTRED_EX + message + Style.RESET_ALL)
+
+
+def warning(message: str):
+    """
+    Prints a warning message
+    :param message: The message to print
+    :return: None
+    """
+    print(Fore.LIGHTYELLOW_EX + message + Style.RESET_ALL)
+
+
+if __name__ == "__main__":
+    main()

@@ -347,7 +347,7 @@ class AnilistApi(ApiInterface):
                 IdType.ANILIST: relation["node"]["id"],
                 IdType.MYANIMELIST: relation["node"]["idMal"]
             })
-            dest_media_type = media_type
+            dest_media_type = MediaType[relation["node"]["type"]]
             rel_type = RelationType[relation["relationType"]]
 
             if rel_type == RelationType.ADAPTATION:
@@ -505,6 +505,7 @@ class AnilistApi(ApiInterface):
                     node {
                         id
                         idMal
+                        type
                     }
                     relationType
                 }

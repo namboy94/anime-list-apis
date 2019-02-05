@@ -139,3 +139,9 @@ class Title(Serializable):
             des[TitleType[title_type]] = title
         generated = cls(des, default=default)  # type: Title
         return generated
+
+    def __str__(self) -> str:
+        """
+        :return: The default title
+        """
+        return self.get()

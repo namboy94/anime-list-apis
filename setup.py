@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
+import os
 from setuptools import setup, find_packages
 
 if __name__ == "__main__":
@@ -37,8 +38,10 @@ if __name__ == "__main__":
         packages=find_packages(),
         install_requires=[
             "typing",
-            "requests"
+            "requests",
+            "colorama"
         ],
+        scripts=list(map(lambda x: os.path.join("bin", x), os.listdir("bin"))),
         test_suite='nose.collector',
         tests_require=['nose'],
         include_package_data=True,

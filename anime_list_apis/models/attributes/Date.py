@@ -81,3 +81,12 @@ class Date(Serializable):
         cls.__ensure_date_correct(year, month, day)
         generated = cls(year, month, day)  # type: Date
         return generated
+
+    def __str__(self) -> str:
+        """
+        :return: An ISO representation of the date
+        """
+        return datetime.strftime(
+            datetime(self.year, self.month, self.day),
+            "%Y-%m-%d"
+        )

@@ -360,8 +360,12 @@ class AnilistApi(ApiInterface):
                 _id, media_type, dest_id, dest_media_type, rel_type
             ).serialize())
 
-        releasing_status = \
-            data["status"].replace("NOT_YET_RELEASED", "NOT_RELEASED")
+        # If no status is provided, use NOT_RELEASED per default
+        releasing_status = data["status"]
+        if releasing_status is None:
+            releasing_status = "NOT_RELEASED"
+        releasing_status = releasing_status\
+            .replace("NOT_YET_RELEASED", "NOT_RELEASED")
 
         serialized = {
             "media_type": media_type.name,

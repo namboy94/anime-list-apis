@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-import json
 from unittest import TestCase
 from anime_list_apis.models.attributes.Title import Title, TitleType
 
@@ -245,13 +244,3 @@ class TestTitle(TestCase):
         self.assertNotEqual(three, four)
 
         self.assertNotEqual(one, "Test")
-
-    def test_string_representation(self):
-        """
-        Tests that the string representation is correct
-        :return: None
-        """
-        title = Title({TitleType.ROMAJI: "SnK", TitleType.ENGLISH: "AoT"})
-        representation = str(title)
-        serialised = json.loads(representation)
-        self.assertEqual(title, title.deserialize(serialised))

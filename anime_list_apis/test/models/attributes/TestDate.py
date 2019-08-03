@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with anime-list-apis.  If not, see <http://www.gnu.org/licenses/>.
 LICENSE"""
 
-import json
 from unittest import TestCase
 from anime_list_apis.models.attributes.Date import Date
 
@@ -107,13 +106,3 @@ class TestDate(TestCase):
         self.assertNotEqual(three, four)
         self.assertNotEqual(four, five)
         self.assertNotEqual(three, five)
-
-    def test_string_representation(self):
-        """
-        Tests that the string representation is correct
-        :return: None
-        """
-        date = Date(2018, 1, 2)
-        representation = str(date)
-        serialised = json.loads(representation)
-        self.assertEqual(date, Date.deserialize(serialised))
